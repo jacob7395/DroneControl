@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroneControl", "DroneControl\DroneControl.csproj", "{D1D52187-E175-4D11-8A8C-BA9AA957E2F0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1D52187-E175-4D11-8A8C-BA9AA957E2F0}.Debug|x64.ActiveCfg = Debug|x64
+		{D1D52187-E175-4D11-8A8C-BA9AA957E2F0}.Debug|x64.Build.0 = Debug|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DA1133AF-05FC-4936-B84B-102DD2B1E35B}
+	EndGlobalSection
+EndGlobal

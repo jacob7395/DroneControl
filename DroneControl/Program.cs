@@ -18,135 +18,126 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        // read INI defaults from CustomData.  If you don't want to use my INI, remove or modify the following routine
-        string sGyroIgnore = "!NAV";
-
         #region Autogyro 
-        // Originally from: http://forums.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461 
-
-        // NOTE: uses: shipOrientationBlock from other code as the designated remote or ship controller
-
-        /// <summary>
-        /// GYRO:How much power to use 0 to 1.0
-        /// </summary>
-        double CTRL_COEFF = 0.9;
+        // Originally from: http://forums.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461
+        // This code has been refacted from the souce, the maths remains the same
 
         /// <summary>
-        /// GYRO:how tight to maintain aim. Lower is tighter. Default is 0.01f
-        /// </summary>
-        float minAngleRad = 0.01f;
-
-
-        /// <summary>
-        /// Enum representing the orientation with respect to the block.
+        /// Enum used to represent orientation in six directions
         /// </summary>
         public enum Orientation
         {
-            up = 0,
-            down = 1,
-            backward = 2,
-            forward = 3,
-            right = 4,
-            left = 5
+            Up = 0,
+            Down = 1,
+            Backward = 2,
+            Forward = 3,
+            Right = 4,
+            Left = 5
         }
 
         /// <summary>
         /// Try to align the ship/grid with the given vector. Returns true if the ship is within minAngleRad of being aligned
         /// </summary>
-        /// <param name="Orientation">The direction to point. "backward", "up","forward"</param>
-        /// <param name="vDirection">the vector for the aim.</param>
-        /// <param name="orientation_block">the terminal block to use for orientation</param>
+        /// <param name="direction">The direction to point. ("Up", "Down", "Forward"...)</param>
+        /// <param name="target">The vector for the aim.</param>
+        /// <param name="orientation_block">The terminal block to use for orientation</param>
+        /// <param name="gyro_power">The power usage between 0..1 defaults to 0.9</param>
+        /// <param name="min_angle">How tight to maintain aim in degress. Lower is tighter. Default is 5.0f</param>
         /// <returns>true if aligned. Meaning the angle of error is less than minAngleRad</returns>
-        bool OrientShip(Orientation O, Vector3D target, IMyTerminalBlock orientation_block)
+        bool OrientShip(Orientation direction,
+                        Vector3D target,
+                        IMyTerminalBlock orientation_block,
+                        double gyro_power = 0.9,
+                        float min_angle = 5.0f)
         {
-
+            // get the position of the orientaion block
             Vector3D location = orientation_block.GetPosition();
-
-            Vector3D vDirection = BeamRider(location, target, orientation_block);
-
-            bool bAligned = true;
-
+            // return argument used to indicate the min_angle_rad has been met
+            bool aligned = true;
+            // get all gyros being used for rotation
             List<IMyGyro> gyros = gyrosetup();
+            // convert form degress to rads
+            double min_angle_rad = (180 / Math.PI) * min_angle;
 
             Matrix orientation_matrix;
             orientation_block.Orientation.GetMatrix(out orientation_matrix);
 
+            // switch the correction setting the down matrix, this is how the orientraion direction is controled
             Vector3D down;
-            switch (O)
+            switch (direction)
             {
-                case Orientation.up:
+                case Orientation.Up:
                     down = orientation_matrix.Up;
                     break;
-                case Orientation.down:
+                case Orientation.Down:
                     down = orientation_matrix.Up;
                     break;
-                case Orientation.backward:
+                case Orientation.Backward:
                     down = orientation_matrix.Backward;
                     break;
-                case Orientation.forward:
+                case Orientation.Forward:
                     down = orientation_matrix.Forward;
                     break;
-                case Orientation.right:
+                case Orientation.Right:
                     down = orientation_matrix.Right;
                     break;
-                case Orientation.left:
+                case Orientation.Left:
                     down = orientation_matrix.Left;
                     break;
-
                 default:
                     down = orientation_matrix.Down;
                     break;
             }
 
-            vDirection.Normalize();
+            // do some magic beam riding, not sure exacly what this does
+            Vector3D beam = BeamRider(location, target, orientation_block);
+            beam.Normalize();
 
+            // calculated outside the for loop for efficincy
+            var localCurrent = Vector3D.Transform(down, MatrixD.Transpose(orientation_matrix));
+
+            // applys maths that I dont quite understand but it works
+            // creadit goes to link given above
             foreach (IMyGyro gyro in gyros)
             {
                 gyro.Orientation.GetMatrix(out orientation_matrix);
 
-                var localCurrent = Vector3D.Transform(down, MatrixD.Transpose(orientation_matrix));
-                var localTarget = Vector3D.Transform(vDirection, MatrixD.Transpose(gyro.WorldMatrix.GetOrientation()));
+                var localTarget = Vector3D.Transform(beam, MatrixD.Transpose(gyro.WorldMatrix.GetOrientation()));
 
                 var rot = Vector3D.Cross(localCurrent, localTarget);
-                double dot2 = Vector3D.Dot(localCurrent, localTarget);
+                double dot = Vector3D.Dot(localCurrent, localTarget);
                 double ang = rot.Length();
 
-                if (dot2 < 0)
+                if (dot < 0)
                     ang = Math.PI - ang; // compensate for >+/-90
                 else
                     ang = Math.Atan2(ang, Math.Sqrt(Math.Max(0.0, 1.0 - ang * ang)));
 
                 // check if the gycro is pointing at the target
-                if (ang < minAngleRad)
+                if (ang < min_angle_rad)
                 {
                     gyro.GyroOverride = false;
                     continue;
                 }
 
-                float yawMax = (float)(2 * Math.PI);
+                float yaw_max = (float)(2 * Math.PI);
 
-                double ctrl_vel = yawMax * (ang / Math.PI) * CTRL_COEFF;
+                double ctrl_vel = yaw_max * (ang / Math.PI) * gyro_power;
 
-                ctrl_vel = Math.Min(yawMax, ctrl_vel);
+                ctrl_vel = Math.Min(yaw_max, ctrl_vel);
                 ctrl_vel = Math.Max(0.01, ctrl_vel);
                 rot.Normalize();
                 rot *= ctrl_vel;
 
-                float pitch = -(float)rot.X;
-                gyro.Pitch = pitch;
+                gyro.Pitch = -(float)rot.X;
+                gyro.Yaw = -(float)rot.Y;
+                gyro.Roll = -(float)rot.Z;
 
-                float yaw = -(float)rot.Y;
-                gyro.Yaw = yaw;
-
-                float roll = -(float)rot.Z;
-                gyro.Roll = roll;
-
-                //		g.SetValueFloat("Power", 1.0f); 
                 gyro.GyroOverride = true;
 
-                bAligned = false;
+                aligned = false;
             }
-            return bAligned;
+            return aligned;
         }
 
 
@@ -184,30 +175,39 @@ namespace IngameScript
                 }
             }
         }
-        
 
-        Vector3D BeamRider(Vector3D vStart, Vector3D vEnd, IMyTerminalBlock orientation_block)
+        /// <summary>
+        /// Draws a line between two vectors returning the corection required to align.
+        /// </summary>
+        /// <returns>The rider.</returns>
+        /// <param name="start">V start.</param>
+        /// <param name="end">V end.</param>
+        /// <param name="orientation_block">Orientation block.</param>
+        Vector3D BeamRider(Vector3D start, Vector3D end, IMyTerminalBlock orientation_block)
         {
-            // 'BeamRider' routine that takes start,end and tries to stay on that beam.
-            Vector3D vBoreEnd = (vEnd - vStart);
-            Vector3D vPosition;
+            Vector3D bore_end = (end - start);
+            Vector3D position;
             if (orientation_block is IMyShipController)
             {
-                vPosition = ((IMyShipController)orientation_block).CenterOfMass;
+                position = ((IMyShipController)orientation_block).CenterOfMass;
             }
             else
             {
-                vPosition = orientation_block.GetPosition();
+                position = orientation_block.GetPosition();
             }
-            Vector3D vAimEnd = (vEnd - vPosition);
-            Vector3D vRejectEnd = VectorRejection(vBoreEnd, vAimEnd);
+            Vector3D aim_end = (end - position);
+            Vector3D reject_end = VectorRejection(bore_end, aim_end);
 
-            Vector3D vCorrectedAim = (vEnd - vRejectEnd * 2) - vPosition;
+            Vector3D corrected_aim = (end - reject_end * 2) - position;
 
-            return vCorrectedAim;
+            return corrected_aim;
         }
 
-        // From Whip. on discord
+        /// <summary>
+        /// I don't know what this does, but assume its needed.
+        /// Appears to correct for something.
+        /// </summary>
+        /// <returns>The rejection.</returns>
         Vector3D VectorRejection(Vector3D a, Vector3D b) //reject a on b    
         {
             if (Vector3D.IsZero(b))
@@ -224,6 +224,11 @@ namespace IngameScript
 
         #region ThrusterControl
 
+        /// <summary>
+        /// Setsup the thrusters returning a dict orderd into direction and thrusters
+        /// </summary>
+        /// <returns>Thrusters orderd into a dict using the orientaion enum as a key</returns>
+        /// <param name="orientation_block">Orientation block.</param>
         private IDictionary<Orientation, List<IMyThrust>> SetupThruster(IMyTerminalBlock orientation_block)
         {
 
@@ -239,62 +244,40 @@ namespace IngameScript
 
             orientation_block.Orientation.GetMatrix(out relative_matrix);
 
-            // TODO refacter code
-            Vector3I UP = new Vector3I(0, -1, 0);
-            Vector3I DOWN = new Vector3I(0, 1, 0);
-            Vector3I LEFT = new Vector3I(1, 0, 0);
-            Vector3I RIGHT = new Vector3I(-1, 0, 0);
-            Vector3I FOWARD = new Vector3I(0, 0, 1);
-            Vector3I BACKWARD = new Vector3I(0, 0, -1);
 
+            IDictionary<Orientation, Vector3I> orientation_lookup = new IDictionary<Orientation, Vector3I>
+            {
+                { Orientation.Up, new Vector3I(0, -1, 0) },
+                { Orientation.Down, new Vector3I(0, 1, 0) },
+                { Orientation.Left, new Vector3I(1, 0, 0) },
+                { Orientation.Right, new Vector3I(-1, 0, 0) },
+                { Orientation.Forward, new Vector3I(0, 0, 1) },
+                { Orientation.Backward, new Vector3I(0, 0, -1) }
+            };
+
+            // group each thruster by orientaion inside a dict
             foreach (IMyThrust thruster in thrusters)
             {
-
-                //Echo(thruster.CustomName);
-                //Echo(thruster.GridThrustDirection.ToString());
-
+                // reset the thruset overide
                 thruster.ThrustOverridePercentage = 0.0f;
-
+                // get the orientation matrix
                 thruster.Orientation.GetMatrix(out thruster_matrix);
-
-
-                if (thruster.GridThrustDirection == UP)
+                // loop through the looup dict attmpting to match the value
+                foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
                 {
-                    ordered_thrusters[Orientation.up].Add(thruster);
-                    thruster.CustomName = "Thruster Up";
-                }
-
-                else if (thruster.GridThrustDirection == DOWN)
-                {
-                    ordered_thrusters[Orientation.down].Add(thruster);
-                    thruster.CustomName = "Thruster Down";
-                }
-
-                else if (thruster.GridThrustDirection == RIGHT)
-                {
-                    ordered_thrusters[Orientation.right].Add(thruster);
-                    thruster.CustomName = "Thruster Right";
-                }
-
-                else if (thruster.GridThrustDirection == LEFT)
-                {
-                    ordered_thrusters[Orientation.left].Add(thruster);
-                    thruster.CustomName = "Thruster Left";
-                }
-
-                else if (thruster.GridThrustDirection == FOWARD)
-                {
-                    ordered_thrusters[Orientation.forward].Add(thruster);
-                    thruster.CustomName = "Thruster Forward";
-                }
-
-                else if (thruster.GridThrustDirection == BACKWARD)
-                {
-                    ordered_thrusters[Orientation.backward].Add(thruster);
-                    thruster.CustomName = "Thruster Backward";
+                    // if the value matches add to thruster dict with the lookup key
+                    if (thruster.GridThrustDirection == lookup.Value)
+                    {
+                        ordered_thrusters[lookup.Key].Add(thruster);
+                        // sets the custom name for the thruster to the direction
+                        thruster.CustomName = "Thruster "+lookup.Key.ToString();
+                        // now match has been found break out of lookup
+                        break;
+                    }
                 }
             }
 
+            // call the enable all thrusers method this is done to prevent thruster being left disabled
             EnableAllThrusers(ref ordered_thrusters);
 
             return ordered_thrusters;
@@ -335,17 +318,53 @@ namespace IngameScript
                     thruster.ThrustOverridePercentage = percent;
         }
 
-        public void ThrusterMain(Orientation direction, IMyTerminalBlock orientation_block, IMyShipController control_block)
+        private void DisableOverideAllThrusters(ref IDictionary<Orientation, List<IMyThrust>> thrusters)
         {
-            float ship_mass = control_block.CalculateShipMass().TotalMass;
-
-            IDictionary<Orientation, List<IMyThrust>> ordered_thrusters = SetupThruster(orientation_block);
-
+            foreach (KeyValuePair<Orientation, List<IMyThrust>> thruster_list in thrusters)
+                foreach (IMyThrust thruster in thruster_list.Value)
+                    thruster.ThrustOverridePercentage = 0.0f;
         }
 
-        public void GetDirectonalVelocity(Orientation direction)
+        /// <summary>
+        /// Will apply a force eveanly over all the thrusters in a direction. Thrusers will be set to max output if force is to large.
+        /// The method currently assumes all thruseters in one direction can apply the same force (they are the same size).
+        /// </summary>
+        /// TODO update method to account for diffrent thruster.
+        /// <param name="force">Force in newtowns (N) to apply.</param>
+        /// <param name="direction">Direction force should be applyed.</param>
+        /// <param name="thrusters">Thruster groups</param>
+        public void ApplyForce(float force, Orientation direction, ref IDictionary<Orientation, List<IMyThrust>> thrusters) 
         {
+            // get the number of throusets
+            number_of_thrusters = thrusters.Count();
 
+            // claculate the max force output
+            float max_force = 0;
+            foreach (IMyThrust thruster in thrusters[direction])
+                max_force += thruster.MaxThrust;
+
+            // set the force to max if to large
+            force = force <= 0 ? Math.Min(force, max_force) : max_force;
+
+            // split the force over the number of thrusters
+            force /= number_of_thrusters;
+
+            // apply the force
+            foreach (IMyThrust thruster in thrusters[direction])
+                thruster.ThrustOverride(force);
+        }
+
+        public void ThrusterMain(Orientation direction, IMyTerminalBlock orientation_block, IMyShipController control_block)
+        {
+            IDictionary<Orientation, List<IMyThrust>> ordered_thrusters = SetupThruster(orientation_block);
+
+            float velocity = control_block.GetShipVelocities();
+            float mass = control_block.CalculateShipMass().TotalMass;
+
+            if (velocity < 10)
+                ApplyForce(-1, Orientation.Forward, ref ordered_thrusters);
+            else
+                DisableOverideAllThrusters(ref ordered_thrusters);
         }
 
         #endregion
@@ -371,18 +390,16 @@ namespace IngameScript
                 List<IMyShipConnector> ship_connectors = new List<IMyShipConnector>();
                 GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(ship_connectors);
 
-                bool bAimed = OrientShip(Orientation.forward, target, ship_connectors[0]);
+                bool bAimed = OrientShip(Orientation.Forward, target, ship_connectors[0]);
 
                 MyShipVelocities velocity = control.GetShipVelocities();
 
                 Echo(velocity.LinearVelocity.ToString());
                 Echo(velocity.AngularVelocity.ToString());
 
-                ThrusterMain(Orientation.forward, control, control);
+                ThrusterMain(Orientation.Forward, control, control);
                 break;
             }
-
-            
         }
     }
 }

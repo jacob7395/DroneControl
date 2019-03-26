@@ -1,0 +1,41 @@
+package IngameScript {
+    enum Orientation {
+        Up
+        Down
+        Backward
+        Forward
+        Right
+        Left
+    }
+
+    package Gyro {
+        class GyroControl {
+            -List<IMyGyro> ship_gyros
+
+            bool OrientShip(\n\
+            Orientation direction,\n\
+            Vector3D target,\n\
+            IMyTerminalBlock orientation_block,\n\
+            double gyro_power = 0.9,\n\
+            float min_angle = 5.0f)
+
+            void DisableGyroOveride()
+        }
+    }
+
+    package Thruster {
+        class ThrusterControl {
+            -List<IMyThrust> ship_thrusters
+
+            void EnableThrusters(\n\
+            List<Orientation> directions,\n\
+            ref IDictionary<Orientation,\n\
+            List<IMyThrust>> thrusters)
+        }
+    }
+
+    class DroneControl {
+        GyroControl gyros
+        ThrusterControl thrusters
+    }
+}

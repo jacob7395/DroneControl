@@ -45,7 +45,7 @@ namespace IngameScript
         }
 
         Orientation direction = Orientation.Forward;
-        double speed = 25;
+        double speed = 5;
         double approch = 10;
         bool stop = false;
         public void Main(string argument, UpdateType updateSource)
@@ -77,19 +77,17 @@ namespace IngameScript
 
                 double stopping_distance = Thrusters.stopping_distance(direction);
 
-                Vector3D local_position = control.CenterOfMass;
-                Vector3D worldPosition = Vector3D.Transform(local_position, control.WorldMatrix);
+                Vector3D worldPosition = control.GetPosition();
                 double distance_to_target = Vector3D.Distance(worldPosition, target);
 
                 Echo(distance_to_target.ToString());
-                Echo(stopping_distance.ToString());
-
+                
                 if (distance_to_target < stopping_distance || distance_to_target < approch)
                 {
                     Thrusters.all_stop();
                     Echo("Stopping");
                 }
-                if (bAimed)
+                else if (bAimed)
                 {
                     Thrusters.SetVelocity(speed);
                     Echo("Approching");

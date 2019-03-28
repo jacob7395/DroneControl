@@ -240,7 +240,7 @@ namespace IngameScript.thruster
 
         public void all_stop()
         {
-            control_block.DampenersOverride = true;
+            control_block.DampenersOverride = false;
             foreach (KeyValuePair<Orientation, List<IMyThrust>> thruster_list in this.thrusters)
                 foreach (IMyThrust thruster in thruster_list.Value)
                 {

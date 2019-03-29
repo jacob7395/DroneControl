@@ -39,3 +39,36 @@ package IngameScript {
         ThrusterControl thrusters
     }
 }
+
+package Task {
+
+    enum ActionType {
+        GoTo
+        Follow
+    }
+
+    abstract Action {
+        const ActionType type
+
+        {abstract} bool Complete()
+    }
+
+    class GoTo {
+        const type = GoTo
+        Vector3D target
+        List<Vector3D> route
+        tolorance = 10
+
+        bool Complete(Vector3D current_position)
+    }
+
+    GoTo .. Action
+
+    class Task {
+        List<Action> actions
+
+        Action Get_Next_Action()
+    }
+
+    Task <-- GoTo : Contains
+}

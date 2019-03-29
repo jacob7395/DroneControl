@@ -1,24 +1,25 @@
-@startwbs
+@startwbs Work Breackdown
 skinparam backgroundColor ivory
 
 + Drone Control
- + Gyro Control
-  + Align with vector
- + Thruster Control
-  + Control thruster in direction
-  + Calculate thrust in direction
-  + Apply forch in direction
- + Thruster & Gyro Integration
-  + Maintain foward velocity
-  + Determin stopping speed
-  + Flip and burn (emergancy stop)
- + Basic Routing
-  + Waypoint setup
-  + Navagate to waypoint
- + Camera Integration
-  + Object detection
-  + Object boundary location
- + Advanced Routing
-  + Navagate around objects
- + Basic Docking
+++ --__Gyro Control__--
++++ --__Align with vector__--
+++ --__Thruster Control__--
++++ --__Control thruster in local direction__--
++++ --__Calculate thrust in local direction__--
++++_ Apply forch in direction
+++ Thruster & Gyro Integration
++++ --__Maintain foward velocity__--
++++ --__Determin stopping speed__--
++++ Flip and burn (emergancy stop)
++++ implement drone control calls
+++ Basic Tasking
++++ setup task structer
++++ implement GoTo action
+++ Camera Integration
++++ Object detection
++++ Object boundary location
+++ Advanced Tasking
++++ Add collition avoidance to GoTo task
++++ Docking
 @endwbs

@@ -1,11 +1,11 @@
-﻿using IngameScript.utility;
+﻿using IngameScript.DroneControl.utility;
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using VRageMath;
 
-namespace IngameScript.thruster
+namespace IngameScript.DroneControl.thruster
 {
     public enum velocity_state
     {
@@ -14,7 +14,7 @@ namespace IngameScript.thruster
         Holding
     }
 
-    public class ThrusterControl
+    public class ThrusterControl : IAutoControl
     {
         private IDictionary<Orientation, List<IMyThrust>> thrusters;
         private IMyGridTerminalSystem GridTerminalSystem;
@@ -148,7 +148,6 @@ namespace IngameScript.thruster
         /// TODO update method to account for diffrent thruster.
         /// <param name="force">Force in newtowns (N) to apply.</param>
         /// <param name="direction">Direction force should be applyed.</param>
-        /// <param name="thrusters">Thruster groups</param>
         private void ApplyForce(double force, Orientation direction = Orientation.Forward)
         {
             List<Orientation> disable = new List<Orientation>();
@@ -217,7 +216,7 @@ namespace IngameScript.thruster
             return max_force;
         }
 
-        public double stopping_distance(Orientation direction)
+        public double stopping_distance(Orientation direction = Orientation.Forward)
         {
             direction = direction.inverse();
             double directional_velocity = Math.Abs(direction.CalcVelocity(this.velocity));
@@ -240,7 +239,18 @@ namespace IngameScript.thruster
 
         public void all_stop()
         {
-            control_block.DampenersOverride = false;
+            control_block.DampenersOverride = true;
+            foreach (KeyValuePair<Orientation, List<IMyThrust>> thruster_list in this.thrusters)
+                foreach (IMyThrust thruster in thruster_list.Value)
+                {
+                    thruster.Enabled = true;
+                    thruster.ThrustOverride = 0;
+                }
+        }
+
+        public void DisableAuto()
+        {
+            control_block.DampenersOverride = true;
             foreach (KeyValuePair<Orientation, List<IMyThrust>> thruster_list in this.thrusters)
                 foreach (IMyThrust thruster in thruster_list.Value)
                 {

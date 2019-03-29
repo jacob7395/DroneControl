@@ -3,11 +3,6 @@ using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System.Collections.Generic;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.ModAPI.Ingame;
-using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System.Text;
@@ -18,11 +13,13 @@ using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
-using IngameScript.utility;
+using IngameScript.DroneControl.utility;
 
-namespace IngameScript.gyro
+namespace IngameScript.DroneControl.gyro
 {
-    public class GyroControl
+    // Originally from: http://forums.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461
+    // This code has been refacted from the souce, the maths remains the same
+    public class GyroControl : IAutoControl
     {
 
         private List<IMyGyro> gyros = new List<IMyGyro>();
@@ -157,16 +154,12 @@ namespace IngameScript.gyro
         /// <summary>
         /// Turns off all overrides on controlled Gyros
         /// </summary>
-        public void gyrosOff(List<IMyGyro> gyros)
+        public void DisableAuto()
         {
-            if (gyros != null)
+            foreach (IMyGyro gyro in this.gyros)
             {
-                for (int i1 = 0; i1 < gyros.Count; ++i1)
-                {
-                    //gyros[i].SetValueBool("Override", false);
-                    gyros[i1].GyroOverride = false;
-                    gyros[i1].Enabled = true;
-                }
+                gyro.GyroOverride = false;
+                gyro.Enabled = true;
             }
         }
 
@@ -209,5 +202,6 @@ namespace IngameScript.gyro
 
             return a - a.Dot(b) / b.LengthSquared() * b;
         }
+
     }
 }

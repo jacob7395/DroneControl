@@ -1,15 +1,59 @@
-package IngameScript {
-    enum Orientation {
-        Up
-        Down
-        Backward
-        Forward
-        Right
-        Left
+package DroneControl {
+
+    package utility {
+        enum Orientation {
+            Up
+            Down
+            Backward
+            Forward
+            Right
+            Left
+
+            Inverse()
+            CalcVelocity(Vector3D velocity)
+        }
+
+        interface AutoControl {
+            DisableAuto()
+            EnableAuto()
+        }
+
+        package Task {
+
+            enum ActionType {
+                GoTo
+                Follow
+            }
+
+            abstract Action {
+                const ActionType type
+
+                {abstract} bool Complete()
+            }
+
+            class GoTo {
+                const type = GoTo
+                Vector3D target
+                List<Vector3D> route
+                tolorance = 10
+
+                bool Complete(Vector3D current_position)
+            }
+
+            GoTo .. Action
+
+            class Task {
+                List<Action> actions
+
+                Action Get_Next_Action()
+            }
+
+            Task <-- GoTo : Contains
+        }
     }
 
     package Gyro {
-        class GyroControl {
+        class GyroControl <AutoControl>{
             -List<IMyGyro> ship_gyros
 
             bool OrientShip(\n\
@@ -19,56 +63,28 @@ package IngameScript {
             double gyro_power = 0.9,\n\
             float min_angle = 5.0f)
 
-            void DisableGyroOveride()
         }
     }
 
     package Thruster {
-        class ThrusterControl {
+        class ThrusterControl <AutoControl>{
             -List<IMyThrust> ship_thrusters
+            Vector3D velocity
 
-            void EnableThrusters(\n\
-            List<Orientation> directions,\n\
-            ref IDictionary<Orientation,\n\
-            List<IMyThrust>> thrusters)
+            velocity_state SetVelocity(\n\
+            double target,\n\
+            double tolorence = 0.5,\n\
+            Orientation direction = Orientation.Forward)
         }
     }
 
-    class DroneControl {
+    class DroneControl <AutoControl>{
         GyroControl gyros
         ThrusterControl thrusters
-    }
-}
 
-package Task {
-
-    enum ActionType {
-        GoTo
-        Follow
+        GoTo(Vector3D Location)
     }
 
-    abstract Action {
-        const ActionType type
-
-        {abstract} bool Complete()
-    }
-
-    class GoTo {
-        const type = GoTo
-        Vector3D target
-        List<Vector3D> route
-        tolorance = 10
-
-        bool Complete(Vector3D current_position)
-    }
-
-    GoTo .. Action
-
-    class Task {
-        List<Action> actions
-
-        Action Get_Next_Action()
-    }
-
-    Task <-- GoTo : Contains
+    DroneControl <-- ThrusterControl
+    DroneControl <-- GyroControl
 }

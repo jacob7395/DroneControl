@@ -96,6 +96,7 @@
     <Analyzer Include="c:\users\jacob\appdata\local\microsoft\visualstudio\15.0_7552bea9\extensions\dtcgycme.ueh\Analyzers\MDKAnalyzer.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Task.cs" />
     <Compile Include="DroneControler.cs" />
     <Compile Include="ThrusterControl.cs" />
     <Compile Include="Utility.cs" />

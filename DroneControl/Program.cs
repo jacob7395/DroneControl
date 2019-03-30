@@ -14,7 +14,7 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
 using IngameScript.DroneControl;
-using IngameScript.DroneControl.utility;
+using IngameScript.DroneControl.utility.task;
 
 namespace IngameScript
 {
@@ -29,26 +29,27 @@ namespace IngameScript
 
             drone = new DroneControler(GridTerminalSystem);
         }
-
+        double alive_count = 0;
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo("Running");
+            Echo("Running " + alive_count.ToString());
+            alive_count += 0.001;
 
             drone.run();
 
 
             Vector3D pos = new Vector3D(1, 2, 3);
 
-            //MoveTo action = new MoveTo(pos);
+            GoTo action = new GoTo(pos);
 
-            Task x = new Task("");
+            Task task = new Task("");
 
-            //string s = action.Serialize();
+            string s = action.Serialize();
 
-            //Vector3D new_pos = action.Deserialization(s);
+            Vector3D new_pos = action.Deserialization(s);
 
-            //Echo(s);
-            //Echo(new_pos.ToString());
+            Echo(s);
+            Echo(new_pos.ToString());
 
         }
     }

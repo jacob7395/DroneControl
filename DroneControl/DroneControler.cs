@@ -16,6 +16,7 @@ using VRage.Game;
 using VRageMath;
 using IngameScript.DroneControl.gyro;
 using IngameScript.DroneControl.utility;
+using IngameScript.DroneControl.utility.task;
 using IngameScript.DroneControl.thruster;
 
 namespace IngameScript.DroneControl

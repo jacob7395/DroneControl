@@ -20,34 +20,42 @@ package DroneControl {
 
         package Task {
 
-            enum ActionType {
+            enum action_tpye {
                 GoTo
                 Follow
             }
 
-            abstract Action {
-                const ActionType type
+            abstract DroneAction {
+                const action_tpye type
 
-                {abstract} bool Complete()
+                {abstract} action_tpye get_type()
+                {abstract} string Serialize()
+                {abstract} bool Deserialization(string objective)
             }
 
             class GoTo {
-                const type = GoTo
-                Vector3D target
+                const type = action_tpye.GoTo
+
                 List<Vector3D> route
                 tolorance = 10
 
-                bool Complete(Vector3D current_position)
-            }
-
-            GoTo .. Action
+                GoTo(Vector3D target, float tolorance = 5)
+                GoTo(string objective)
+                bool Complete()
+                Vector3D Next_Point()
+                Add_Point(Vector3D point)
+            }     
 
             class Task {
-                List<Action> actions
+                List<DroneAction> actions
 
-                Action Get_Next_Action()
+                DroneAction Get_Next_Action()
+                bool Action_Complete()
+                Add_Action(DroneAction action)
+                Add_Action(String action)
             }
 
+            GoTo .. DroneAction
             Task <-- GoTo : Contains
         }
     }

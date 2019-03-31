@@ -34,7 +34,11 @@ namespace IngameScript.DroneControl
         private IMyGridTerminalSystem GridTerminalSystem;
         private IMyRemoteControl controller;
 
-        private Task current_task;
+        private Task current_task = null;
+
+        private IMyTerminalBlock orientation_block;
+
+        private double max_speed = 400;
 
         /// <summary>
         /// Initalise the control groups and wait for a task to be given.
@@ -55,9 +59,21 @@ namespace IngameScript.DroneControl
             this.gyros = new GyroControl(GridTerminalSystem);
             this.thrusters = new ThrusterControl(GridTerminalSystem, GridTerminalSystem.GetBlockWithName("Control Unit"), controler);
             this.GridTerminalSystem = GridTerminalSystem;
+
+            // setup the oriantation block to a ship connector or a controler if one was not found
+            List<IMyShipConnector> ship_connectors = new List<IMyShipConnector>();
+            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(ship_connectors);
+            if (ship_connectors.Count > 0)
+                this.orientation_block = ship_connectors[0];
+            else
+                this.orientation_block = controller;
         }
 
-        public void add_task(Task task)
+        /// <summary>
+        /// Sets the task to the given object.
+        /// </summary>
+        /// <param name="task"></param>
+        public void set_task(Task task)
         {
             this.DisableAuto();
 
@@ -98,36 +114,22 @@ namespace IngameScript.DroneControl
         }
 
         /// <summary>
-        /// Attempts to execute the current task.
-        /// 
-        /// Will idle if no task is avalible.
+        /// Execute a GoTo action.
         /// </summary>
-        public void run()
+        /// <param name="location"></param>
+        private void GoTo(Vector3D location)
         {
-            double speed = 400;
             double approch = 2.5;
             double stopping_margin = 1.01;
 
-            // get the waypoint info from the remote controller
-            List<MyWaypointInfo> waypoint_info = new List<MyWaypointInfo>();
-            this.controller.GetWaypointInfo(waypoint_info);
-
-            Vector3D target = Vector3D.Zero;
-            foreach (MyWaypointInfo waypoint in waypoint_info)
-                target = waypoint.Coords;
-
-            // get get the connector used to orientate the ship
-            List<IMyShipConnector> ship_connectors = new List<IMyShipConnector>();
-            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(ship_connectors);
-
             // aim the ship towards the objective
-            bool bAimed = this.gyros.OrientShip(Orientation.Forward, target, ship_connectors[0], gyro_power: 1, min_angle: 0.25f);
+            bool bAimed = this.gyros.OrientShip(Orientation.Forward, location, this.orientation_block, gyro_power: 1, min_angle: 0.25f);
 
             double stopping_distance = this.thrusters.stopping_distance();
 
             // get the world position and the position to target
             Vector3D worldPosition = this.controller.GetPosition();
-            double distance_to_target = Vector3D.Distance(worldPosition, target);
+            double distance_to_target = Vector3D.Distance(worldPosition, location);
 
             // simple algerithm to go to a target location
             this.thrusters.DisableAuto();
@@ -138,12 +140,36 @@ namespace IngameScript.DroneControl
             }
             else if (bAimed)
             {
-                this.thrusters.SetVelocity(speed);
+                this.thrusters.SetVelocity(this.max_speed);
             }
             else
             {
                 this.thrusters.DisableAllThrusers();
             }
+        }
+
+        /// <summary>
+        /// Attempts to execute the current task.
+        /// 
+        /// Will idle if no task is avalible.
+        /// </summary>
+        public void run()
+        {
+            
+            if(this.current_task != null)
+            {
+                DroneAction current_action = this.current_task.Get_Next_Action();
+
+                switch (current_action.get_type())
+                {
+                    case action_tpye.GoTo:
+                        GoTo goto_action = current_action as GoTo;
+                        Vector3D target = goto_action.Next_Point();
+                        this.GoTo(target);
+                        break;
+                }
+            }
+ 
         }
     }
 }

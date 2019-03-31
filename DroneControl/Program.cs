@@ -28,28 +28,25 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
 
             drone = new DroneControler(GridTerminalSystem);
+
+            Vector3D target = drone.current_location();
+            target.X += 500;
+
+            GoTo action = new GoTo(target);
+
+            Task task = new Task();
+            task.Add_Action(action);
+
+            drone.set_task(task);
         }
+
         double alive_count = 0;
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo("Running " + alive_count.ToString());
+            Echo("Alive Count " + alive_count.ToString());
             alive_count += 0.001;
 
             drone.run();
-
-
-            Vector3D pos = new Vector3D(1, 2, 3);
-
-            GoTo action = new GoTo(pos);
-
-            Task task = new Task("");
-
-            string s = action.Serialize();
-
-            Vector3D new_pos = action.Deserialization(s);
-
-            Echo(s);
-            Echo(new_pos.ToString());
 
         }
     }

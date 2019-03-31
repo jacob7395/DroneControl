@@ -19,16 +19,17 @@ namespace IngameScript.DroneControl.utility.task
 {
     public class Task
     {
-        List<Action> actions;
+        List<DroneAction> actions = new List<DroneAction>();
 
-        public Task(String task)
-        {
-            this.actions = new List<Action>();
-        }
+        public Task() {}
 
-        public Action Get_Next_Action()
+        public DroneAction Get_Next_Action()
         {
-            return this.actions[0];
+            DroneAction next_action = null;
+            if (this.actions.Count > 0)
+                next_action = this.actions[0];
+
+            return next_action;
         }
 
         public bool Action_Complete()
@@ -37,23 +38,38 @@ namespace IngameScript.DroneControl.utility.task
 
             return this.actions.Count > 0;
         }
+
+        public void Add_Action(DroneAction action)
+        {
+            actions.Add(action);
+        }
+
+        public void Add_Action(String action)
+        {
+            
+        }
     }
 
-    public abstract class Action<T>
+    public enum action_tpye
     {
-        abstract public bool Complete(T check);
+        GoTo
+    }
+
+    public abstract class DroneAction
+    {
+        abstract public action_tpye get_type();
 
         abstract public string Serialize();
-
-        abstract public T Deserialization(string objective);
     }
 
-    public class GoTo : Action<Vector3D>
+    public class GoTo : DroneAction
     {
         Vector3D target;
-        float tolorance;
+        float tolorance = 5;
 
         List<Vector3D> route;
+
+        public const action_tpye type = action_tpye.GoTo;
 
 
         public GoTo(Vector3D target, float tolorance = 5)
@@ -64,7 +80,15 @@ namespace IngameScript.DroneControl.utility.task
             this.route.Add(target);
         }
 
-        public override bool Complete(Vector3D current_postion)
+        public GoTo(string objective)
+        {
+            Vector3D target = this.Deserialization(objective);
+            this.target = target;
+            this.route = new List<Vector3D>();
+            this.route.Add(target);
+        }
+
+        public bool Complete(Vector3D current_postion)
         {
             if (Vector3D.Distance(this.route[0], current_postion) <= tolorance)
                 this.route.RemoveAt(0);
@@ -87,7 +111,7 @@ namespace IngameScript.DroneControl.utility.task
             return String.Format("GoTo:{0},{1},{2}", this.target.X, this.target.Y, this.target.Z);
         }
 
-        public override Vector3D Deserialization(string objective)
+        public Vector3D Deserialization(string objective)
         {
             System.Text.RegularExpressions.Regex type_check = new System.Text.RegularExpressions.Regex("^GoTo:([^,]+),([^,]+),([^,]+)");
             System.Text.RegularExpressions.Match correct_type = type_check.Match(objective);
@@ -104,6 +128,11 @@ namespace IngameScript.DroneControl.utility.task
             }
 
             return out_val;
+        }
+
+        public override action_tpye get_type()
+        {
+            return action_tpye.GoTo;
         }
     }
 }

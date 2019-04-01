@@ -27,6 +27,7 @@ namespace IngameScript.DroneControl.thruster
         {
             get
             {
+                //TODO remove duplicate code with droneControler
                 MatrixD world_matrix = control_block.WorldMatrix;
                 Vector3D world_velocity = control_block.GetShipVelocities().LinearVelocity;
 
@@ -34,12 +35,45 @@ namespace IngameScript.DroneControl.thruster
 
                 return local_velocity;
             }
+            set
+            {
+                this.SetVelocity(value.X, direction : Orientation.Right);
+                this.SetVelocity(value.Y, direction : Orientation.Up);
+                this.SetVelocity(value.Z, direction : Orientation.Backward);
+            }
+        }
+
+        public Vector3D stopping_distances
+        {
+            get
+            {
+                Vector3D stopping = new Vector3D();
+
+                Vector3D current_velocity = velocity;
+
+                if (current_velocity.Z > 0)
+                    stopping.Z = this.stopping_distance(direction: Orientation.Backward);
+                else
+                    stopping.Z = this.stopping_distance(direction: Orientation.Forward);
+
+                if (current_velocity.X > 0)
+                    stopping.X = this.stopping_distance(direction: Orientation.Up);
+                else
+                    stopping.X = this.stopping_distance(direction: Orientation.Down);
+
+                if (current_velocity.Y > 0)
+                    stopping.Y = this.stopping_distance(direction: Orientation.Right);
+                else
+                    stopping.Y = this.stopping_distance(direction: Orientation.Left);
+
+                return stopping;
+            }
         }
 
         public ThrusterControl(IMyGridTerminalSystem GridTerminalSystem, IMyTerminalBlock orientation_block, IMyShipController control_block)
         {
             this.GridTerminalSystem = GridTerminalSystem;
-            thrusters = SetupThruster(orientation_block);
+            thrusters = SetupThrusters(orientation_block);
             this.control_block = control_block;
 
             // call the enable all thrusers method this is done to prevent thruster being left disabled
@@ -50,7 +84,7 @@ namespace IngameScript.DroneControl.thruster
         /// </summary>
         /// <returns>Thrusters orderd into a dict using the orientaion enum as a key</returns>
         /// <param name="orientation_block">Orientation block.</param>
-        private IDictionary<Orientation, List<IMyThrust>> SetupThruster(IMyTerminalBlock orientation_block)
+        private IDictionary<Orientation, List<IMyThrust>> SetupThrusters(IMyTerminalBlock orientation_block)
         {
 
             List<IMyThrust> thrusters = new List<IMyThrust>();
@@ -218,7 +252,6 @@ namespace IngameScript.DroneControl.thruster
 
         public double stopping_distance(Orientation direction = Orientation.Forward)
         {
-            direction = direction.inverse();
             double directional_velocity = Math.Abs(direction.CalcVelocity(this.velocity));
             double mass = this.control_block.CalculateShipMass().TotalMass;
 

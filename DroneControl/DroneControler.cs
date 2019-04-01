@@ -29,7 +29,7 @@ namespace IngameScript.DroneControl
     {
 
         private GyroControl gyros;
-        private ThrusterControl thrusters;
+        public ThrusterControl thrusters;
 
         private IMyGridTerminalSystem GridTerminalSystem;
         private IMyRemoteControl controller;
@@ -100,7 +100,8 @@ namespace IngameScript.DroneControl
 
         /// <summary>
         /// uses world matix to get the local ship velocity.
-        /// This was taken from a forum but unfochantly I have lost the artical.
+        /// Originaly from:
+        /// https://forum.keenswh.com/threads/tutorial-how-to-do-vector-transformations-with-world-matricies.7399827/
         /// </summary>
         /// <returns>Ship velocity in local space</returns>
         public Vector3D get_local_velocity()
@@ -111,6 +112,28 @@ namespace IngameScript.DroneControl
             Vector3D local_velocity = Vector3D.TransformNormal(world_velocity, MatrixD.Transpose(world_matrix));
 
             return local_velocity;
+        }
+
+        /// <summary>
+        /// Method to calcualte the local position of a world pos.
+        /// 
+        /// Currently seems a bit flawed.
+        /// 
+        /// TODO find a better solution
+        /// </summary>
+        /// <param name="wolrd_pos"></param>
+        /// <returns></returns>
+        public Vector3D get_local_space(Vector3D wolrd_pos)
+        {
+            Vector3D referenceWorldPosition = this.orientation_block.WorldMatrix.Translation; //block.WorldMatrix.Translation is the same as block.GetPosition() btw
+
+            //Convert worldPosition into a world direction
+            Vector3D worldDirection = wolrd_pos - referenceWorldPosition; //this is a vector starting at the reference block pointing at your desired position
+
+            //Convert worldDirection into a local direction
+            Vector3D bodyPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(this.orientation_block.WorldMatrix));
+
+            return bodyPosition;
         }
 
         /// <summary>
@@ -125,26 +148,15 @@ namespace IngameScript.DroneControl
             // aim the ship towards the objective
             bool bAimed = this.gyros.OrientShip(Orientation.Forward, location, this.orientation_block, gyro_power: 1, min_angle: 0.25f);
 
-            double stopping_distance = this.thrusters.stopping_distance();
+            Vector3D stopping_distances = this.thrusters.stopping_distances;
 
             // get the world position and the position to target
-            Vector3D worldPosition = this.controller.GetPosition();
-            double distance_to_target = Vector3D.Distance(worldPosition, location);
+            Vector3D target_grid = this.get_local_space(location);
 
-            // simple algerithm to go to a target location
-            this.thrusters.DisableAuto();
-            if (distance_to_target < (stopping_distance * stopping_margin) || distance_to_target < approch)
+
+            if (target_grid.X > 0)
             {
-                this.thrusters.all_stop();
-                this.gyros.DisableAuto();
-            }
-            else if (bAimed)
-            {
-                this.thrusters.SetVelocity(this.max_speed);
-            }
-            else
-            {
-                this.thrusters.DisableAllThrusers();
+
             }
         }
 

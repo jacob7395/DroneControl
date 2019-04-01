@@ -22,6 +22,8 @@ namespace IngameScript
     {
 
         DroneControler drone;
+        Vector3D target;
+        double alive_count;
 
         public Program()
         {
@@ -29,7 +31,7 @@ namespace IngameScript
 
             drone = new DroneControler(GridTerminalSystem);
 
-            Vector3D target = drone.current_location();
+            target = drone.current_location();
             target.X += 500;
 
             GoTo action = new GoTo(target);
@@ -38,15 +40,27 @@ namespace IngameScript
             task.Add_Action(action);
 
             drone.set_task(task);
+
+            alive_count = 0;
         }
 
-        double alive_count = 0;
+        
         public void Main(string argument, UpdateType updateSource)
         {
             Echo("Alive Count " + alive_count.ToString());
             alive_count += 0.001;
 
-            drone.run();
+            //drone.run();
+
+            Echo(drone.thrusters.velocity.ToString());
+
+            Vector3D current_pos = drone.current_location();
+            Vector3D target_pos = drone.get_local_space(target);
+
+            //Echo(target_pos.ToString());
+
+            //Echo(current_pos.ToString());
+            //Echo(target.ToString());
 
         }
     }

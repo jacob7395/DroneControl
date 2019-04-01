@@ -175,22 +175,33 @@ namespace IngameScript.DroneControl.utility.task
             // return the name and the points
             return actiong_name + points;
         }
-
+        /// <summary>
+        /// Given a string this method will fill the class data with infomation provided.
+        /// The sting should be fomrated as follows:
+        /// "GoTo:x1,y1,z1:x2,y2,z2...xn,yn,zn"
+        /// Where the last ponts later in the route come last in the string.
+        /// </summary>
+        /// <param name="objective"></param>
+        /// <returns>Returns true if a route was extracted</returns>
         public override bool Deserialization(string objective)
         {
+            // regex to match the action name
             System.Text.RegularExpressions.Regex type_check = new System.Text.RegularExpressions.Regex("^GoTo:");
             System.Text.RegularExpressions.Match correct_type = type_check.Match(objective);
-
+            // flag to indecate if a point was read
             bool success = false;
 
             if (correct_type.Success)
             {
+                // if successfuly matched init a new route
                 this.route = new List<Vector3D>();
-
+                // split the string using the seperator character
                 string[] split_objective = objective.Split(':');
-
+                // loop from the second elemnt in the split
+                // the first element contians only the action name
                 for (int i = 1; i < split_objective.Length; i++)
                 {
+                    // for each elments parse the location data and add to the route
                     float x = float.Parse(split_objective[0]);
                     float y = float.Parse(split_objective[1]);
                     float z = float.Parse(split_objective[2]);
@@ -204,6 +215,10 @@ namespace IngameScript.DroneControl.utility.task
             return success;
         }
 
+        /// <summary>
+        /// Return the type for this action.
+        /// </summary>
+        /// <returns>Will always return action_tpye.GoTo</returns>
         public override action_tpye get_type()
         {
             return action_tpye.GoTo;

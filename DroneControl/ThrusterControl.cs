@@ -54,17 +54,17 @@ namespace IngameScript.DroneControl.thruster
                 if (current_velocity.Z > 0)
                     stopping.Z = this.stopping_distance(direction: Orientation.Backward);
                 else
-                    stopping.Z = this.stopping_distance(direction: Orientation.Forward);
-
-                if (current_velocity.X > 0)
-                    stopping.X = this.stopping_distance(direction: Orientation.Up);
-                else
-                    stopping.X = this.stopping_distance(direction: Orientation.Down);
+                    stopping.Z = -this.stopping_distance(direction: Orientation.Forward);
 
                 if (current_velocity.Y > 0)
-                    stopping.Y = this.stopping_distance(direction: Orientation.Right);
+                    stopping.Y = this.stopping_distance(direction: Orientation.Up);
                 else
-                    stopping.Y = this.stopping_distance(direction: Orientation.Left);
+                    stopping.Y = -this.stopping_distance(direction: Orientation.Down);
+
+                if (current_velocity.X > 0)
+                    stopping.X = this.stopping_distance(direction: Orientation.Right);
+                else
+                    stopping.X = -this.stopping_distance(direction: Orientation.Left);
 
                 return stopping;
             }

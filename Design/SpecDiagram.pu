@@ -15,7 +15,6 @@ package DroneControl {
 
         interface AutoControl {
             DisableAuto()
-            EnableAuto()
         }
 
         package Task {
@@ -75,24 +74,44 @@ package DroneControl {
     }
 
     package Thruster {
+        enum velocity_state
+        {
+            Accelerating
+            Deccelerating
+            Holding
+        }
+
         class ThrusterControl <AutoControl>{
             -List<IMyThrust> ship_thrusters
             Vector3D velocity
 
             velocity_state SetVelocity(\n\
-            double target,\n\
+            double speed,\n\
             double tolorence = 0.5,\n\
             Orientation direction = Orientation.Forward)
+
+            double GetMaxDirectionalForce(Orientation direction)
+            double stopping_distance(Orientation direction = Orientation.Forward)
+            void hold_velocity(List<Orientation> directions)
         }
     }
 
     class DroneControl <AutoControl>{
+        Task current_task
+        
         GyroControl gyros
         ThrusterControl thrusters
 
+        Vector3D get_local_velocity()
+        Vector3D current_location()
+
+        void Set_Task(Task task)
         GoTo(Vector3D Location)
+
+        run()
     }
 
     DroneControl <-- ThrusterControl
     DroneControl <-- GyroControl
+    DroneControl <-- Task : Recives
 }

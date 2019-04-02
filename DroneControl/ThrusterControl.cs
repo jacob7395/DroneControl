@@ -39,7 +39,7 @@ namespace IngameScript.DroneControl.thruster
             {
                 this.SetVelocity(value.X, direction : Orientation.Right);
                 this.SetVelocity(value.Y, direction : Orientation.Up);
-                this.SetVelocity(value.Z, direction : Orientation.Backward);
+                this.SetVelocity(-value.Z);
             }
         }
 
@@ -212,6 +212,16 @@ namespace IngameScript.DroneControl.thruster
             }
         }
 
+        public void Apple_Acceleration(double acceleration, Orientation direction = Orientation.Forward)
+        {
+            if(acceleration <= -1)
+                ApplyForce(-1, direction);
+
+            double mass = this.control_block.CalculateShipMass().TotalMass;
+
+            ApplyForce(acceleration * mass);
+        }
+
         public velocity_state SetVelocity(double target, double tolorence = 0.5, Orientation direction = Orientation.Forward)
         {
             List<Orientation> disable = new List<Orientation>();
@@ -221,21 +231,23 @@ namespace IngameScript.DroneControl.thruster
 
             double directional_velocity = direction.CalcVelocity(this.velocity);
 
+            double velocity_diff = target - directional_velocity;
+
             if (directional_velocity < target - tolorence)
             {
-                ApplyForce(-1, direction);
+                Apple_Acceleration(-1, direction);
                 velocity_met = velocity_state.Accelerating;
             }
             else if (directional_velocity > target + tolorence)
             {
-                ApplyForce(-1, inverce_direction);
+                Apple_Acceleration(-1, inverce_direction);
                 velocity_met = velocity_state.Deccelerating;
             }
             else
             {
                 disable.Add(direction);
                 disable.Add(inverce_direction);
-                this.DisableThrusters(disable);
+                this.OverideThrusters(disable);
             }
 
             return velocity_met;

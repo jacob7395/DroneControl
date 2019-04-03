@@ -48,25 +48,28 @@ namespace IngameScript
             Echo("Alive Count " + alive_count.ToString());
             alive_count += 0.001;
 
-            drone.run();
+            //drone.run();
 
             //Echo(drone.thrusters.velocity.ToString());
 
             Vector3D current_pos = drone.current_location();
-            Vector3D target_pos = drone.get_local_space(test_target);
-
-            Vector3D target_grid = drone.get_local_space(test_target);
 
             Vector3D local_target = drone.get_local_space(test_target);
 
+            Vector3D stopping_distances = drone.thrusters.stopping_distances;
+            
+
             double vectore_len = local_target.Length();
             Vector3D target_speed = new Vector3D();
-            target_speed.X = local_target.X / vectore_len * 400;
-            target_speed.Y = local_target.Y / vectore_len * 400;
-            target_speed.Z = local_target.Z / vectore_len * 400;
+            target_speed.X = local_target.X - stopping_distances.X;
+            target_speed.Y = local_target.Y - stopping_distances.Y;
+            target_speed.Z = local_target.Z - stopping_distances.Z;
 
+            //drone.thrusters.velocity = new Vector3D(0, 0, -10);
+            //drone.thrusters.velocity = target_speed;
             //Echo(target_pos.ToString());
-            Echo(drone.thrusters.stopping_distances.ToString());
+            Echo(target_speed.ToString());
+            Echo(stopping_distances.ToString());
             //Echo(target_speed.ToString());
             //Echo((target_pos.Z - drone.thrusters.stopping_distances.Z).ToString());
 

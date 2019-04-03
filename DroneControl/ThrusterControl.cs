@@ -39,7 +39,7 @@ namespace IngameScript.DroneControl.thruster
             {
                 this.SetVelocity(value.X, direction : Orientation.Right);
                 this.SetVelocity(value.Y, direction : Orientation.Up);
-                this.SetVelocity(-value.Z);
+                this.SetVelocity(value.Z, direction: Orientation.Backward);
             }
         }
 
@@ -230,8 +230,6 @@ namespace IngameScript.DroneControl.thruster
             velocity_state velocity_met = velocity_state.Holding;
 
             double directional_velocity = direction.CalcVelocity(this.velocity);
-
-            double velocity_diff = target - directional_velocity;
 
             if (directional_velocity < target - tolorence)
             {

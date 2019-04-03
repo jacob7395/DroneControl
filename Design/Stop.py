@@ -1,24 +1,30 @@
 import matplotlib.pyplot as plt
 from enum import Enum
 from matplotlib.widgets import Slider
+import numpy
 
 start_velocity = 0
-distance = 100
+distance = 10000
 mass = 5000
 target_tolorance = 0.1
 max_speed = 400
 
 speed_margen = 0.5
 
-acceletraion_max = 1
-deccleration_max = 0.5
-velocity_max = 10
+acceletraion_max = 25
+deccleration_max = 25
+velocity_max = 400
 
-delta_t = 0.01
+delta_t = 1/60
 
 
 def calc_stopping_distance(velocity, deccleration):
-    return velocity*velocity/(2*deccleration_max)
+    stopping_dist = velocity*velocity/(2*deccleration_max)
+
+    if velocity < 0:
+        stopping_dist *= -1
+
+    return stopping_dist
 
 
 def set_velocity(target_speed, curret_speed, acceleration, decceleration):
@@ -31,6 +37,8 @@ def set_velocity(target_speed, curret_speed, acceleration, decceleration):
 
     return curret_speed
 
+def asyncrones_range_check(value, range, offset = 0):
+    return value < range + offset and value > -range + offset
 
 def simulate_travel(distance, start_velocity):
 
@@ -53,29 +61,28 @@ def simulate_travel(distance, start_velocity):
     velocitey_data = []
     time_data = []
 
-    while distance > 0:
-        time += delta_t
+    switched = True
 
-        if travlace_state == motion_state.accelerating:
-            velocitey = set_velocity(
-                velocity_max, velocitey, acceleration, deccelration)
-        elif travlace_state == motion_state.deccelerating:
-            velocitey = set_velocity(
-                -velocity_max, velocitey, acceleration, deccelration)
-        else:
-            velocitey = velocitey
+    target_distance = distance
+    while (not(asyncrones_range_check(target_distance, 1)) or not(asyncrones_range_check(velocitey, 0.1))) and time < 500:
+        time += delta_t
 
         stopping_distance = calc_stopping_distance(velocitey, deccleration_max)
 
-        distance -= velocitey * delta_t
+        targed_velocity = target_distance - stopping_distance
 
-        if stopping_distance >= distance:
-            travlace_state = motion_state.deccelerating
+        velocitey = set_velocity(targed_velocity, velocitey, acceleration, deccelration)
 
-        distance_data.append(distance)
+        target_distance -= velocitey * delta_t
+
+        distance_data.append(target_distance)
         velocitey_data.append(velocitey)
         stoppig_data.append(stopping_distance)
         time_data.append(time)
+
+        if asyncrones_range_check(target_distance, 1) and not switched:
+            target_distance = -distance
+            switched = True
 
     return distance_data, stoppig_data, velocitey_data, time_data
 

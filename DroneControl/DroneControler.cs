@@ -157,19 +157,14 @@ namespace IngameScript.DroneControl
 
             double vectore_len = local_target.Length();
             Vector3D target_speed = new Vector3D();
-            target_speed.X = local_target.X / vectore_len * max_speed;
-            target_speed.Y = local_target.Y / vectore_len * max_speed;
-            target_speed.Z = local_target.Z / vectore_len * max_speed;
 
+            target_speed.X = 0;
+            target_speed.Y = 0;
+            target_speed.Z = 1;
 
-            if (Math.Abs(local_target.X - stopping_distances.X) < Math.Abs(stopping_distances.X) -1)
-                target_speed.X = 0;
-
-            if (Math.Abs(local_target.Y - stopping_distances.Y) < Math.Abs(stopping_distances.Y) - 1)
-                target_speed.Y = 0;
-
-            if (Math.Abs(local_target.Z - stopping_distances.Z) <= Math.Abs(stopping_distances.Z) + 1)
-                target_speed.Z = 0;
+            //target_speed.X = local_target.X / vectore_len * max_speed;
+            //target_speed.Y = local_target.Y / vectore_len * max_speed;
+            //target_speed.Z = local_target.Z / vectore_len * max_speed;
 
             this.thrusters.velocity = target_speed;
         }

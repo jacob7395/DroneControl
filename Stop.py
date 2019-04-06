@@ -4,26 +4,24 @@ from matplotlib.widgets import Slider
 import numpy as np
 
 start_velocity = 0
-distance = [250,-1000,5000]
-acceletraion_max = [2,2,25]
-deacceleration_max = [2,2,20]
+distance = [250, -100, 5000]
 
 velocity_max = 400
 
 # this is not applyed in the simulation for now
-mass = 250000
+mass = 250000/2
 
 acceleration_force = [288000*4,288000*4,3600000*2]
-decceleration_force = [288000*4,288000*4,3600000*2]
+decceleration_force = [288000*4,288000*4,288000*8]
 
 acceletraion_max = []
 deacceleration_max = []
 
 for force in acceleration_force:
-    acceletraion_max.append(force / 500000)
+    acceletraion_max.append(force / mass)
 
 for force in decceleration_force:
-    deacceleration_max.append(force / 500000)
+    deacceleration_max.append(force / mass)
 
 target_tolorance = 0.1
 speed_margen = 0.5
@@ -44,7 +42,7 @@ def calc_stopping_distance(velocity, acceleration, decceleration):
 
 def set_velocity(target_speed, curret_speed, acceleration, decceleration):
 
-    delta_v = abs(curret_speed - target_speed)
+    delta_v = abs(curret_speed - target_speed) * 1/delta_t
     acceleration = min(acceleration, delta_v)
     decceleration = min(decceleration, delta_v)
 
@@ -59,7 +57,7 @@ def set_velocity(target_speed, curret_speed, acceleration, decceleration):
 def asyncrones_range_check(values, span, offset = 0):
     check = True
     for value in values:
-        if not value < span + offset and value > -span + offset:
+        if not (value <= span + offset and value >= -span + offset):
             check = False
             break
     return check
@@ -81,15 +79,17 @@ def simulate(distance, start_velocity):
     target_velocitey_data = []
     time_data = []
 
-    while (not(asyncrones_range_check(target_distance, 1)) or not(asyncrones_range_check(velocitey, 0.1))) and time < 500:
+    simulating = True
+    extra_time = 2.5
+    while simulating and time < 500:
         time += delta_t
 
         # setup varibles used by each axis
         stopping_distance = []
         target_velocity = []
         stopping_diff = []
-        
-        # ----------------------------------------------------------------------------------------------------- #
+
+        # ----------------------------------------------------------------------- #
         # Calculate the control for each axis
         for i in range(3):
             # calcaulate the stopping distances
@@ -100,18 +100,16 @@ def simulate(distance, start_velocity):
 
         # nomolize the velocity then scale with the velocity max
         # this will produce a velocity vector that is prposonaly distrabuted and the magnitude is velocity max
-        target_velocity = np.array(target_distance)
-        target_velocity[2] = target_velocity[2] - target_velocity[2] * 0.95
+        target_velocity = np.array(stopping_diff)
+
+        #target_velocity[2] -= target_velocity[2] * 0.95
+
         target_velocity = target_velocity / np.linalg.norm(target_velocity) * velocity_max
         target_velocity = np.ndarray.tolist(target_velocity)
 
         for i in range(3):
-            if abs(stopping_diff[i]) < -0.5:
-                target_velocity[i] = 0
-                continue
-
             target_velocity[i] = min(abs(target_velocity[i]), abs(stopping_diff[i])) * np.sign(target_velocity[i])
-        # ----------------------------------------------------------------------------------------------------- #
+        # ----------------------------------------------------------------------- #
         # Simulate the control
         for i in range(3):
 
@@ -128,33 +126,48 @@ def simulate(distance, start_velocity):
         stoppig_data.append(stopping_distance[:])
         time_data.append(time)
 
+        # check if simulation goals have been met
+        if asyncrones_range_check(target_distance, 0.01) and asyncrones_range_check(velocitey, 0.01):
+            extra_time -= delta_t
+            if extra_time <= 0:
+                simulating = False
+        else:
+            extra_time = 2.5
+
+
     return distance_data, stoppig_data, velocitey_data, target_velocitey_data, time_data
 
 
-distance_data, stop_data, velocitey_data, target_velocity, time = simulate(distance, start_velocity)
+
+def main():
+    
+    distance_data, stop_data, velocitey_data, target_velocity, time = simulate(distance, start_velocity)
 
 
-def get_list_index(data, index):
-    """ """
-    out = []
-    for row in data:
-        out.append(row[index])
+    def get_list_index(data, index):
+        """ """
+        out = []
+        for row in data:
+            out.append(row[index])
 
-    return out
+        return out
 
-plt.figure(1)
-# plot data
-for i in range(3):
-    plt.subplot(3,2,1 + 2*i)
-    plt.plot(time, get_list_index(velocitey_data,i))
-    plt.plot(time, get_list_index(target_velocity,i), 'r--')
-    plt.xlabel('Time')
-    plt.ylabel('Velocity')
+    plt.figure(1)
+    # plot data
+    for i in range(3):
+        plt.subplot(3,2,1 + 2*i)
+        plt.plot(time, get_list_index(velocitey_data,i))
+        plt.plot(time, get_list_index(target_velocity,i), 'r--')
+        plt.xlabel('Time')
+        plt.ylabel('Velocity')
 
-    plt.subplot(3,2,2 + 2*i)
-    plt.plot(time, get_list_index(distance_data,i))
-    plt.plot(time, get_list_index(stop_data, i), 'r--')
-    plt.xlabel('Time')
-    plt.ylabel('Distance')
+        plt.subplot(3,2,2 + 2*i)
+        plt.plot(time, get_list_index(distance_data,i))
+        plt.plot(time, get_list_index(stop_data, i), 'r--')
+        plt.xlabel('Time')
+        plt.ylabel('Distance')
 
-plt.show()
+    plt.show()
+
+if __name__ == '__main__':
+    main()

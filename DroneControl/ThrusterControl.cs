@@ -16,7 +16,7 @@ namespace IngameScript.DroneControl.thruster
 
     public class ThrusterControl : IAutoControl
     {
-        private IDictionary<Orientation, List<IMyThrust>> thrusters;
+        public IDictionary<Orientation, List<IMyThrust>> thrusters;
         private IMyGridTerminalSystem GridTerminalSystem;
         private IMyShipController control_block;
 
@@ -39,7 +39,7 @@ namespace IngameScript.DroneControl.thruster
             {
                 this.SetVelocity(value.X, direction : Orientation.Right);
                 this.SetVelocity(value.Y, direction : Orientation.Up);
-                this.SetVelocity(value.Z, direction: Orientation.Backward);
+                this.SetVelocity(value.Z, direction : Orientation.Backward);
             }
         }
 
@@ -182,15 +182,21 @@ namespace IngameScript.DroneControl.thruster
         /// TODO update method to account for diffrent thruster.
         /// <param name="force">Force in newtowns (N) to apply.</param>
         /// <param name="direction">Direction force should be applyed.</param>
-        private void ApplyForce(double force, Orientation direction = Orientation.Forward)
+        public void ApplyForce(double force, Orientation direction = Orientation.Forward)
         {
-            List<Orientation> disable = new List<Orientation>();
-            Orientation inverce_direction = direction.inverse();
-            disable.Add(inverce_direction);
-            DisableThrusters(disable);
+            //List<Orientation> disable = new List<Orientation>();
+            //Orientation inverce_direction = direction.inverse();
+            //disable.Add(inverce_direction);
+            //DisableThrusters(disable);
+
+            if (force < 0)
+            {
+                direction = direction.inverse();
+                force *= -1;
+            }
 
             // get the number of throusets
-            float number_of_thrusters = thrusters.Count();
+            float number_of_thrusters = thrusters[direction].Count();
 
             // claculate the max force output
             double max_force = GetMaxDirectionalForce(direction);
@@ -204,51 +210,24 @@ namespace IngameScript.DroneControl.thruster
             // apply the force
             foreach (IMyThrust thruster in thrusters[direction])
             {
-                if (force <= 0)
-                    thruster.ThrustOverride = ThrusterControl.MAX_FORCE;
-                else
-                    thruster.ThrustOverride = (float)force;
+                thruster.ThrustOverride = (float)force;
                 thruster.Enabled = true;
             }
         }
 
-        public void Apple_Acceleration(double acceleration, Orientation direction = Orientation.Forward)
+        public void Apple_Acceleration(double acceleration = double.MaxValue, Orientation direction = Orientation.Forward)
         {
-            if(acceleration <= -1)
-                ApplyForce(-1, direction);
-
             double mass = this.control_block.CalculateShipMass().TotalMass;
 
-            ApplyForce(acceleration * mass);
+            ApplyForce(acceleration * mass, direction);
         }
 
-        public velocity_state SetVelocity(double target, double tolorence = 0.5, Orientation direction = Orientation.Forward)
+        public void SetVelocity(double target, Orientation direction = Orientation.Forward)
         {
-            List<Orientation> disable = new List<Orientation>();
-            Orientation inverce_direction = direction.inverse();
-
-            velocity_state velocity_met = velocity_state.Holding;
-
             double directional_velocity = direction.CalcVelocity(this.velocity);
+            double acceleration_required = target - directional_velocity;
 
-            if (directional_velocity < target - tolorence)
-            {
-                Apple_Acceleration(-1, direction);
-                velocity_met = velocity_state.Accelerating;
-            }
-            else if (directional_velocity > target + tolorence)
-            {
-                Apple_Acceleration(-1, inverce_direction);
-                velocity_met = velocity_state.Deccelerating;
-            }
-            else
-            {
-                disable.Add(direction);
-                disable.Add(inverce_direction);
-                this.OverideThrusters(disable);
-            }
-
-            return velocity_met;
+            Apple_Acceleration(acceleration_required, direction);
         }
 
         public double GetMaxDirectionalForce(Orientation direction)

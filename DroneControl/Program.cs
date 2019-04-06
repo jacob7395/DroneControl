@@ -15,6 +15,7 @@ using VRage.Game;
 using VRageMath;
 using IngameScript.DroneControl;
 using IngameScript.DroneControl.utility.task;
+using IngameScript.DroneControl.utility;
 
 namespace IngameScript
 {
@@ -52,30 +53,30 @@ namespace IngameScript
 
             //Echo(drone.thrusters.velocity.ToString());
 
-            Vector3D current_pos = drone.current_location();
-
             Vector3D local_target = drone.get_local_space(test_target);
-
             Vector3D stopping_distances = drone.thrusters.stopping_distances;
-            
-
-            double vectore_len = local_target.Length();
+            Vector3D target_diff = new Vector3D();
             Vector3D target_speed = new Vector3D();
-            target_speed.X = local_target.X - stopping_distances.X;
-            target_speed.Y = local_target.Y - stopping_distances.Y;
-            target_speed.Z = local_target.Z - stopping_distances.Z;
+            Vector3D target_speed_nomolized = new Vector3D();
 
-            //drone.thrusters.velocity = new Vector3D(0, 0, -10);
-            //drone.thrusters.velocity = target_speed;
-            //Echo(target_pos.ToString());
-            Echo(target_speed.ToString());
+
+            target_diff.X = local_target.X - stopping_distances.X;
+            target_diff.Y = local_target.Y - stopping_distances.Y;
+            target_diff.Z = local_target.Z - stopping_distances.Z;
+
+            target_speed_nomolized = target_diff / target_diff.Length() * 400;
+
+            target_diff.X = Math.Min(Math.Abs(target_diff.X), Math.Abs(target_speed_nomolized.X)) * Math.Sign(target_diff.X);
+            target_diff.Y = Math.Min(Math.Abs(target_diff.Y), Math.Abs(target_speed_nomolized.Y)) * Math.Sign(target_diff.Y);
+            target_diff.Z = Math.Min(Math.Abs(target_diff.Z), Math.Abs(target_speed_nomolized.Z)) * Math.Sign(target_diff.Z);
+
+            drone.thrusters.velocity = target_diff;
+
+
+            Echo(target_speed_nomolized.ToString());
+            Echo(target_diff.ToString());
             Echo(stopping_distances.ToString());
-            //Echo(target_speed.ToString());
-            //Echo((target_pos.Z - drone.thrusters.stopping_distances.Z).ToString());
 
-
-            //drone.thrusters.SetVelocity(-10);
-            //Echo(target.ToString());
         }
     }
 }

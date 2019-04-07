@@ -7,7 +7,7 @@ using VRageMath;
 
 namespace IngameScript.DroneControl.thruster
 {
-    public enum velocity_state
+    public enum Thruster_State
     {
         Accelerating,
         Deccelerating,
@@ -16,18 +16,34 @@ namespace IngameScript.DroneControl.thruster
 
     public class ThrusterControl : IAutoControl
     {
+        /// <summary>
+        /// dictonary holding lists of thrusters with the direction as a key
+        /// </summary>
         public IDictionary<Orientation, List<IMyThrust>> thrusters;
+        /// <summary>
+        /// refrence to grid terminal system
+        /// </summary>
         private IMyGridTerminalSystem GridTerminalSystem;
+        /// <summary>
+        /// regrence for the control block
+        /// </summary>
         public IMyShipController control_block;
 
-        private const float MAX_FORCE = 5e20f;
+        /// <summary>
+        /// the max speed for the thrusters, this may be possible to set using the grid
+        /// </summary>
         public const float MAX_SPEED = 400;
 
+        /// <summary>
+        /// Velocity is represented in local space where -Z is foward.
+        /// 
+        /// The set method will tell the thrusters to match the given values.
+        /// </summary>
+        /// <value>A Vectore3D of loacl velocity</value>
         public Vector3D velocity
         {
             get
             {
-                //TODO remove duplicate code with droneControler
                 MatrixD world_matrix = control_block.WorldMatrix;
                 Vector3D world_velocity = control_block.GetShipVelocities().LinearVelocity;
 
@@ -37,9 +53,9 @@ namespace IngameScript.DroneControl.thruster
             }
             set
             {
-                this.SetVelocity(value.X, direction : Orientation.Right);
-                this.SetVelocity(value.Y, direction : Orientation.Up);
-                this.SetVelocity(value.Z, direction : Orientation.Backward);
+                this.SetVelocity(value.X, direction: Orientation.Right);
+                this.SetVelocity(value.Y, direction: Orientation.Up);
+                this.SetVelocity(value.Z, direction: Orientation.Backward);
             }
         }
 
@@ -49,7 +65,6 @@ namespace IngameScript.DroneControl.thruster
             {
                 Vector3D stopping = new Vector3D();
 
-
                 stopping.Z = this.stopping_distance(direction: Orientation.Backward);
                 stopping.Y = this.stopping_distance(direction: Orientation.Up);
                 stopping.X = this.stopping_distance(direction: Orientation.Right);
@@ -58,26 +73,28 @@ namespace IngameScript.DroneControl.thruster
             }
         }
 
+        /// <summary>
+        /// Calculates the the distance required to stop the ship in a given direction.
+        /// Will return negative if the stopping distance is reversed.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
         public double stopping_distance(Orientation direction = Orientation.Forward)
         {
-            bool invert = false;
-
+            // get the velocity in the given direction
             double directional_velocity = direction.CalcVelocity(this.velocity);
 
             double mass = this.control_block.CalculateShipMass().TotalMass;
 
+            // if the velocity is negative reverse the direction
             if (directional_velocity > 0)
-            {
                 direction = direction.inverse();
-            }
 
+            // calcuate the force needed to stop in the given direction
             double max_force_output = GetMaxDirectionalForce(direction);
 
-            double distance;
-
-            distance = Math.Pow(directional_velocity, 2) / (2 * max_force_output / mass) * Math.Sign(directional_velocity);
-
-            return distance;
+            // calculates the stopping distance then applys the sign from the velocity
+            return Math.Pow(directional_velocity, 2) / (2 * max_force_output / mass) * Math.Sign(directional_velocity);
         }
 
         public ThrusterControl(IMyGridTerminalSystem GridTerminalSystem, IMyTerminalBlock orientation_block, IMyShipController control_block)
@@ -151,7 +168,7 @@ namespace IngameScript.DroneControl.thruster
         }
 
 
-        private void OverideThrusters(float percent = 0.0f , Orientation direction = Orientation.Forward)
+        private void OverideThrusters(float percent = 0.0f, Orientation direction = Orientation.Forward)
         {
             foreach (IMyThrust thruster in thrusters[direction])
                 thruster.ThrustOverridePercentage = percent;

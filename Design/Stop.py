@@ -101,7 +101,6 @@ def simulate(distance, start_velocity):
         # nomolize the velocity then scale with the velocity max
         # this will produce a velocity vector that is prposonaly distrabuted and the magnitude is velocity max
         target_velocity = np.array(target_distance)
-        target_velocity[2] = target_velocity[2] - target_velocity[2] * 0.95
         target_velocity = target_velocity / np.linalg.norm(target_velocity) * velocity_max
         target_velocity = np.ndarray.tolist(target_velocity)
 

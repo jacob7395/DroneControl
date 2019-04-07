@@ -139,34 +139,34 @@ namespace IngameScript.DroneControl
         /// <summary>
         /// Execute a GoTo action.
         /// </summary>
-        /// <param name="location"></param>
-        private void GoTo(Vector3D location)
+        /// <param name="Target"></param>
+        private bool GoTo(Vector3D Target)
         {
-            double approch = 2.5;
-            double stopping_margin = 1.01;
 
-            // aim the ship towards the objective
-            //bool bAimed = this.gyros.OrientShip(Orientation.Forward, location, this.orientation_block, gyro_power: 1, min_angle: 0.25f);
-
+            Vector3D target = this.get_local_space(Target);
             Vector3D stopping_distances = this.thrusters.stopping_distances;
 
-            // get the world position and the position to target
-            Vector3D target_grid = this.get_local_space(location);
-
-            Vector3D local_target = get_local_space(location);
-
-            double vectore_len = local_target.Length();
+            Vector3D target_diff = new Vector3D();
             Vector3D target_speed = new Vector3D();
+            Vector3D target_speed_scaled = new Vector3D();
 
-            target_speed.X = 0;
-            target_speed.Y = 0;
-            target_speed.Z = 1;
+            target_diff = target - stopping_distances;
 
-            //target_speed.X = local_target.X / vectore_len * max_speed;
-            //target_speed.Y = local_target.Y / vectore_len * max_speed;
-            //target_speed.Z = local_target.Z / vectore_len * max_speed;
+            target_speed_scaled = target_diff / target_diff.Length() * 400;
+
+            target_speed.X = Math.Min(Math.Abs(target_diff.X), Math.Abs(target_speed_scaled.X)) * Math.Sign(target_diff.X);
+            target_speed.Y = Math.Min(Math.Abs(target_diff.Y), Math.Abs(target_speed_scaled.Y)) * Math.Sign(target_diff.Y);
+            target_speed.Z = Math.Min(Math.Abs(target_diff.Z), Math.Abs(target_speed_scaled.Z)) * Math.Sign(target_diff.Z);
 
             this.thrusters.velocity = target_speed;
+
+            // aim the ship towards the objective
+            if (target_diff.Length() > 10)
+                this.gyros.OrientShip(Orientation.Forward, Target, this.orientation_block, gyro_power: 1, min_angle: 0.01f);
+            else
+                this.gyros.DisableAuto();
+
+            return target_diff.Length() < 1 && this.thrusters.velocity.Length() < 0.1;
         }
 
         /// <summary>
@@ -179,14 +179,23 @@ namespace IngameScript.DroneControl
             
             if(this.current_task != null)
             {
-                DroneAction current_action = this.current_task.Get_Next_Action();
+                DroneAction current_action;
+                if (this.current_task != null)
+                    current_action = this.current_task.Get_Next_Action();
+                else
+                    current_action = null;
 
                 switch (current_action.get_type())
                 {
                     case action_tpye.GoTo:
                         GoTo goto_action = current_action as GoTo;
                         Vector3D target = goto_action.Next_Point();
-                        this.GoTo(target);
+
+                        if (this.GoTo(target) == true)
+                        {
+                            if (goto_action.Complete() == false)
+                                current_action = null;
+                        }
                         break;
                 }
             }

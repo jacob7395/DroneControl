@@ -140,9 +140,9 @@ namespace IngameScript.DroneControl.utility.task
             this.route.Add(target);
         }
 
-        public bool Complete(Vector3D current_postion)
+        public bool Complete()
         {
-            if (Vector3D.Distance(this.route[0], current_postion) <= tolorance)
+            if (this.route.Count > 0)
                 this.route.RemoveAt(0);
 
             return this.route.Count > 0;
@@ -155,7 +155,7 @@ namespace IngameScript.DroneControl.utility.task
 
         public void Add_Point(Vector3D point)
         {
-            route.Add(point);
+            route.Insert(0, point);
         }
 
         public override string Serialize()

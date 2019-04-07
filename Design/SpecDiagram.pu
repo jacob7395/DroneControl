@@ -76,23 +76,32 @@ package DroneControl {
     package Thruster {
         enum velocity_state
         {
-            Accelerating
-            Deccelerating
+            Moving
             Holding
         }
 
         class ThrusterControl <AutoControl>{
+            
+            +Vector3D velocity
+            +Vector3D stopping_distances
+            #velocity_state State
             -List<IMyThrust> ship_thrusters
-            Vector3D velocity
 
-            velocity_state SetVelocity(\n\
-            double speed,\n\
-            double tolorence = 0.5,\n\
-            Orientation direction = Orientation.Forward)
-
-            double GetMaxDirectionalForce(Orientation direction)
-            double stopping_distance(Orientation direction = Orientation.Forward)
-            void hold_velocity(List<Orientation> directions)
+            -void SetVelocity(\n\
+            double target,\n\
+            Orientation direction)
+            -AppleAcceleration(\n\
+            double acceleration,\n\
+            Orientation direction)
+            -ApplyForce(\n\
+            double force,\n\
+            Orientation direction)
+            -GetMaxDirectionalForce(Orientation direction)
+            -EnableAllThrusers()
+            -OverideThrusters(\n\
+            float percent,\n\
+            Orientation direction)
+            -DisableAuto()
         }
     }
 

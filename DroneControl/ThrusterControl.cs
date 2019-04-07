@@ -19,7 +19,7 @@ namespace IngameScript.DroneControl.thruster
         /// <summary>
         /// dictonary holding lists of thrusters with the direction as a key
         /// </summary>
-        public IDictionary<Orientation, List<IMyThrust>> thrusters;
+        private IDictionary<Orientation, List<IMyThrust>> thrusters;
         /// <summary>
         /// refrence to grid terminal system
         /// </summary>
@@ -27,7 +27,7 @@ namespace IngameScript.DroneControl.thruster
         /// <summary>
         /// regrence for the control block
         /// </summary>
-        public IMyShipController control_block;
+        private IMyShipController control_block;
 
         /// <summary>
         /// the max speed for the thrusters, this may be possible to set using the grid
@@ -46,7 +46,7 @@ namespace IngameScript.DroneControl.thruster
             {
                 MatrixD world_matrix = control_block.WorldMatrix;
                 Vector3D world_velocity = control_block.GetShipVelocities().LinearVelocity;
-
+                // tranlate from world to local velocity
                 Vector3D local_velocity = Vector3D.TransformNormal(world_velocity, MatrixD.Transpose(world_matrix));
 
                 return local_velocity;
@@ -79,7 +79,7 @@ namespace IngameScript.DroneControl.thruster
         /// </summary>
         /// <param name="direction"></param>
         /// <returns></returns>
-        public double stopping_distance(Orientation direction = Orientation.Forward)
+        private double stopping_distance(Orientation direction = Orientation.Forward)
         {
             // get the velocity in the given direction
             double directional_velocity = direction.CalcVelocity(this.velocity);
@@ -160,20 +160,6 @@ namespace IngameScript.DroneControl.thruster
             return ordered_thrusters;
         }
 
-        private void EnableAllThrusers()
-        {
-            foreach (KeyValuePair<Orientation, List<IMyThrust>> thruster_list in this.thrusters)
-                foreach (IMyThrust thruster in thruster_list.Value)
-                    thruster.Enabled = true;
-        }
-
-
-        private void OverideThrusters(float percent = 0.0f, Orientation direction = Orientation.Forward)
-        {
-            foreach (IMyThrust thruster in thrusters[direction])
-                thruster.ThrustOverridePercentage = percent;
-        }
-
         /// <summary>
         /// Will apply a force eveanly over all the thrusters in a direction. Thrusers will be set to max output if force is to large.
         /// The method currently assumes all thruseters in one direction can apply the same force (they are the same size).
@@ -181,7 +167,7 @@ namespace IngameScript.DroneControl.thruster
         /// TODO update method to account for diffrent thruster.
         /// <param name="force">Force in newtowns (N) to apply.</param>
         /// <param name="direction">Direction force should be applyed.</param>
-        public void ApplyForce(double force, Orientation direction = Orientation.Forward)
+        private void ApplyForce(double force, Orientation direction = Orientation.Forward)
         {
             //List<Orientation> disable = new List<Orientation>();
             //Orientation inverce_direction = direction.inverse();
@@ -217,14 +203,24 @@ namespace IngameScript.DroneControl.thruster
             }
         }
 
-        public void Apple_Acceleration(double acceleration = double.MaxValue, Orientation direction = Orientation.Forward)
+        /// <summary>
+        /// Caculates the force required to accelerate the ship at the given speed.
+        /// </summary>
+        /// <param name="acceleration">Default to fmax</param>
+        /// <param name="direction">Default to foward</param>
+        private void Apple_Acceleration(double acceleration = double.MaxValue, Orientation direction = Orientation.Forward)
         {
             double mass = this.control_block.CalculateShipMass().TotalMass;
-
+            // call the force method
             ApplyForce(acceleration * mass, direction);
         }
 
-        public void SetVelocity(double target, Orientation direction = Orientation.Forward)
+        /// <summary>
+        /// Apply the acceleration requred to set the speed as indicated.
+        /// </summary>
+        /// <param name="target">The speed target</param>
+        /// <param name="direction">The direction to set velocity</param>
+        private void SetVelocity(double target, Orientation direction = Orientation.Forward)
         {
             double directional_velocity = direction.CalcVelocity(this.velocity);
             double acceleration_required = target - directional_velocity;
@@ -232,7 +228,12 @@ namespace IngameScript.DroneControl.thruster
             Apple_Acceleration(acceleration_required, direction);
         }
 
-        public double GetMaxDirectionalForce(Orientation direction)
+        /// <summary>
+        /// Given a direction return the max force output for that direction
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
+        private double GetMaxDirectionalForce(Orientation direction)
         {
             double max_force = 0;
             foreach (IMyThrust thruster in thrusters[direction])
@@ -241,6 +242,30 @@ namespace IngameScript.DroneControl.thruster
             return max_force;
         }
 
+        /// <summary>
+        /// Sets all thrusters to enabled
+        /// </summary>
+        private void EnableAllThrusers()
+        {
+            foreach (KeyValuePair<Orientation, List<IMyThrust>> thruster_list in this.thrusters)
+                foreach (IMyThrust thruster in thruster_list.Value)
+                    thruster.Enabled = true;
+        }
+
+        /// <summary>
+        /// Will set the thruster overide value to the percent given in the desired direction.
+        /// </summary>
+        /// <param name="percent">Overide percent</param>
+        /// <param name="direction">Direction to overide</param>
+        private void OverideThrusters(float percent = 0.0f, Orientation direction = Orientation.Forward)
+        {
+            foreach (IMyThrust thruster in thrusters[direction])
+                thruster.ThrustOverridePercentage = percent;
+        }
+        
+        /// <summary>
+        /// Disables the thruster auto control, auto will be enabled again when a velocity is set
+        /// </summary>
         public void DisableAuto()
         {
             control_block.DampenersOverride = true;

@@ -59,17 +59,39 @@ package DroneControl {
         }
     }
 
+    package Camera {
+        enum Camera_Mode {
+            Collision_Avoidance
+        }
+
+        class Camera {
+            -IMyCameraBlock cam
+            +<<get>> MyDetectedEntityInfo collision_object
+            +<<get>> Camera_Mode mode
+            +double active_range
+            __
+            +void Camera(\nIMyCameraBlock cam,\ndouble active_range = 2000)
+            +bool SetMode(Camera_Mode mode)
+            +Vector3D GetSafePoint()
+            __
+            +bool Run()
+        }
+    }
+
     package Gyro {
         class GyroControl <AutoControl>{
-            -List<IMyGyro> ship_gyros
-
-            bool OrientShip(\n\
+            -List<IMyGyro> gyros
+            -IMyGridTerminalSystem GridTerminalSystem
+            __
+            +GyroControl(IMyGridTerminalSystem GridTerminalSystem)
+            +bool OrientShip(\n\
             Orientation direction,\n\
             Vector3D target,\n\
             IMyTerminalBlock orientation_block,\n\
             double gyro_power = 0.9,\n\
             float min_angle = 5.0f)
-
+            __
+            -List<IMyGyro> gyrosetup()
         }
     }
 
@@ -106,21 +128,30 @@ package DroneControl {
     }
 
     class DroneControl <AutoControl>{
-        Task current_task
-        
-        GyroControl gyros
-        ThrusterControl thrusters
+        -IDictionary<Orientation, List<IMyCameraBlock>> = cameras
+        -GyroControl gyros
+        -ThrusterControl thrusters
 
-        Vector3D get_local_velocity()
-        Vector3D current_location()
+        -Task current_task
+        -IMyGridTerminalSystem GridTerminalSystem
+        -IMyRemoteControl controller
+        -private IMyTerminalBlock orientation_block
 
-        void Set_Task(Task task)
-        GoTo(Vector3D Location)
-
-        run()
+        -double const max_speed = 400
+        __
+        +DroneControler(IMyGridTerminalSystem GridTerminalSystem)
+        +SetTask(Task task)
+        +Vector3D CurrentLocation()
+        +Vector3D GetLocalVelocity()
+        +Vector3D CalcLocalSpace(Vector3D wolrd_pos)
+        __
+        -bool GoTo(Vector3D Target)
+        __
+        +run()
     }
 
     DroneControl <-- ThrusterControl
     DroneControl <-- GyroControl
-    DroneControl <-- Task : Recives
+    DroneControl }-- Task : Recives
+    DroneControl "1" -- "*" Camera
 }

@@ -152,7 +152,7 @@ namespace IngameScript.DroneControl
 
             target_diff = target - stopping_distances;
 
-            target_speed_scaled = target_diff / target_diff.Length() * 400;
+            target_speed_scaled = target_diff / target_diff.Length() * 20;
 
             target_speed.X = Math.Min(Math.Abs(target_diff.X), Math.Abs(target_speed_scaled.X)) * Math.Sign(target_diff.X);
             target_speed.Y = Math.Min(Math.Abs(target_diff.Y), Math.Abs(target_speed_scaled.Y)) * Math.Sign(target_diff.Y);

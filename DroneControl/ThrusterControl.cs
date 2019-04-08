@@ -32,7 +32,7 @@ namespace IngameScript.DroneControl.thruster
         /// <summary>
         /// the max speed for the thrusters, this may be possible to set using the grid
         /// </summary>
-        public const float MAX_SPEED = 400;
+        public const float MAX_SPEED = 10;
 
         /// <summary>
         /// Velocity is represented in local space where -Z is foward.

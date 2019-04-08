@@ -9,8 +9,8 @@ package DroneControl {
             Right
             Left
 
-            Inverse()
-            CalcVelocity(Vector3D velocity)
+            +Inverse()
+            +CalcVelocity(Vector3D velocity)
         }
 
         interface AutoControl {

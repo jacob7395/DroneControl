@@ -18,6 +18,7 @@ using IngameScript.DroneControl.gyro;
 using IngameScript.DroneControl.utility;
 using IngameScript.DroneControl.utility.task;
 using IngameScript.DroneControl.thruster;
+using IngameScript.DroneControl.Camera;
 
 namespace IngameScript.DroneControl
 {
@@ -27,9 +28,9 @@ namespace IngameScript.DroneControl
     /// </summary>
     public class DroneControler : IAutoControl
     {
-
+        public IDictionary<Orientation, List<CameraAgent>> cameras;
         private GyroControl gyros;
-        public ThrusterControl thrusters;
+        private ThrusterControl thrusters;
 
         private IMyGridTerminalSystem GridTerminalSystem;
         private IMyRemoteControl controller;
@@ -56,17 +57,62 @@ namespace IngameScript.DroneControl
             }
 
             this.controller = controler;
-            this.gyros = new GyroControl(GridTerminalSystem);
-            this.thrusters = new ThrusterControl(GridTerminalSystem, GridTerminalSystem.GetBlockWithName("Control Unit"), controler);
             this.GridTerminalSystem = GridTerminalSystem;
 
-            // setup the oriantation block to a ship connector or a controler if one was not found
+            // setup the orientation block to a ship connector or a controller if one was not found
             List<IMyShipConnector> ship_connectors = new List<IMyShipConnector>();
             GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(ship_connectors);
             if (ship_connectors.Count > 0)
                 this.orientation_block = ship_connectors[0];
             else
                 this.orientation_block = controller;
+
+
+
+            this.gyros = new GyroControl(GridTerminalSystem);
+            this.thrusters = new ThrusterControl(GridTerminalSystem, GridTerminalSystem.GetBlockWithName("Control Unit"), controler);
+
+            
+
+            this.cameras = new Dictionary<Orientation, List<CameraAgent>>();
+            // init list for all directions
+            foreach (Orientation direction in Enum.GetValues(typeof(Orientation)))
+                this.cameras.Add(direction, new List<CameraAgent>());
+
+            // lookup the table to translate from orientation vector to orientation enum
+            IDictionary<Orientation, Vector3I> orientation_lookup = new Dictionary<Orientation, Vector3I>
+            {
+                { Orientation.Up, new Vector3I(0, 1, 0) },
+                { Orientation.Down, new Vector3I(0, -1, 0) },
+                { Orientation.Left, new Vector3I(-1, 0, 0) },
+                { Orientation.Right, new Vector3I(1, 0, 0) },
+                { Orientation.Forward, new Vector3I(0, 0, -1) },
+                { Orientation.Backward, new Vector3I(0, 0, 1) }
+            };
+
+            // setup camera agents
+            List<IMyCameraBlock> cams = new List<IMyCameraBlock>();
+            GridTerminalSystem.GetBlocksOfType<IMyCameraBlock>(cams);
+
+            Matrix cam_matrix = new Matrix();
+            foreach (IMyCameraBlock cam in cams)
+            {
+                // init the camera object
+                CameraAgent temp_agent = new CameraAgent(cam, GridTerminalSystem);
+
+                cam.Orientation.GetMatrix(out cam_matrix);
+                // loop through the lookup dict attempting to match the value
+                foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
+                {
+
+                    // if the value matches add to camera dict with the lookup key
+                    if (cam_matrix.Forward == lookup.Value)
+                    {
+                        this.cameras[lookup.Key].Add(temp_agent);
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -99,8 +145,8 @@ namespace IngameScript.DroneControl
         }
 
         /// <summary>
-        /// uses world matix to get the local ship velocity.
-        /// Originaly from:
+        /// uses world matrix to get the local ship velocity.
+        /// Original from:
         /// https://forum.keenswh.com/threads/tutorial-how-to-do-vector-transformations-with-world-matricies.7399827/
         /// </summary>
         /// <returns>Ship velocity in local space</returns>
@@ -115,7 +161,7 @@ namespace IngameScript.DroneControl
         }
 
         /// <summary>
-        /// Method to calcualte the local position of a world pos.
+        /// Method to calculate the local position of a world position.
         /// 
         /// Currently seems a bit flawed.
         /// 
@@ -141,8 +187,7 @@ namespace IngameScript.DroneControl
         /// </summary>
         /// <param name="Target"></param>
         private bool GoTo(Vector3D Target)
-        {
-
+        {                
             Vector3D target = this.get_local_space(Target);
             Vector3D stopping_distances = this.thrusters.stopping_distances;
 
@@ -152,7 +197,7 @@ namespace IngameScript.DroneControl
 
             target_diff = target - stopping_distances;
 
-            target_speed_scaled = target_diff / target_diff.Length() * 20;
+            target_speed_scaled = target_diff / target_diff.Length() * max_speed;
 
             target_speed.X = Math.Min(Math.Abs(target_diff.X), Math.Abs(target_speed_scaled.X)) * Math.Sign(target_diff.X);
             target_speed.Y = Math.Min(Math.Abs(target_diff.Y), Math.Abs(target_speed_scaled.Y)) * Math.Sign(target_diff.Y);
@@ -172,13 +217,13 @@ namespace IngameScript.DroneControl
         /// <summary>
         /// Attempts to execute the current task.
         /// 
-        /// Will idle if no task is avalible.
+        /// Will idle if no task is available.
         /// </summary>
         public void run()
         {
-            
-            if(this.current_task != null)
-            {
+ 
+            if (this.current_task != null)
+            {       
                 DroneAction current_action;
                 if (this.current_task != null)
                     current_action = this.current_task.Get_Next_Action();
@@ -189,12 +234,22 @@ namespace IngameScript.DroneControl
                 {
                     case action_tpye.GoTo:
                         GoTo goto_action = current_action as GoTo;
-                        Vector3D target = goto_action.Next_Point();
 
-                        if (this.GoTo(target) == true)
+                        //run the cameras
+                        foreach (CameraAgent cam in this.cameras[Orientation.Forward])
+                        {
+                            cam.Run();
+
+                            if (cam.safe_point_avalible)
+                            {
+                                goto_action.Add_Point(cam.GetSafePoint());
+                            }
+                        }
+                        
+                        if (this.GoTo(goto_action.Next_Point()) == true)
                         {
                             if (goto_action.Complete() == false)
-                                current_action = null;
+                                this.current_task = null;
                         }
                         break;
                 }

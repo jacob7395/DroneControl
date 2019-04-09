@@ -17,36 +17,36 @@ namespace IngameScript.DroneControl.thruster
     public class ThrusterControl : IAutoControl
     {
         /// <summary>
-        /// dictonary holding lists of thrusters with the direction as a key
+        /// dictionary holding lists of thrusters with the direction as a key
         /// </summary>
         private IDictionary<Orientation, List<IMyThrust>> thrusters;
         /// <summary>
-        /// refrence to grid terminal system
+        /// reference to grid terminal system
         /// </summary>
         private IMyGridTerminalSystem GridTerminalSystem;
         /// <summary>
-        /// regrence for the control block
+        /// reference for the control block
         /// </summary>
         private IMyShipController control_block;
 
         /// <summary>
         /// the max speed for the thrusters, this may be possible to set using the grid
         /// </summary>
-        public const float MAX_SPEED = 10;
+        public const float MAX_SPEED = 400;
 
         /// <summary>
-        /// Velocity is represented in local space where -Z is foward.
+        /// Velocity is represented in local space where -Z is forward.
         /// 
         /// The set method will tell the thrusters to match the given values.
         /// </summary>
-        /// <value>A Vectore3D of loacl velocity</value>
+        /// <value>A Vectore3D of local velocity</value>
         public Vector3D velocity
         {
             get
             {
                 MatrixD world_matrix = control_block.WorldMatrix;
                 Vector3D world_velocity = control_block.GetShipVelocities().LinearVelocity;
-                // tranlate from world to local velocity
+                // translate from world to local velocity
                 Vector3D local_velocity = Vector3D.TransformNormal(world_velocity, MatrixD.Transpose(world_matrix));
 
                 return local_velocity;
@@ -74,7 +74,7 @@ namespace IngameScript.DroneControl.thruster
         }
 
         /// <summary>
-        /// Calculates the the distance required to stop the ship in a given direction.
+        /// Calculates the distance required to stop the ship in a given direction.
         /// Will return negative if the stopping distance is reversed.
         /// </summary>
         /// <param name="direction"></param>
@@ -90,10 +90,10 @@ namespace IngameScript.DroneControl.thruster
             if (directional_velocity > 0)
                 direction = direction.inverse();
 
-            // calcuate the force needed to stop in the given direction
+            // calculate the force needed to stop in the given direction
             double max_force_output = GetMaxDirectionalForce(direction);
 
-            // calculates the stopping distance then applys the sign from the velocity
+            // calculates the stopping distance then apply the sign from the velocity
             return Math.Pow(directional_velocity, 2) / (2 * max_force_output / mass) * Math.Sign(directional_velocity);
         }
 
@@ -103,13 +103,13 @@ namespace IngameScript.DroneControl.thruster
             thrusters = SetupThrusters(orientation_block);
             this.control_block = control_block;
 
-            // call the enable all thrusers method this is done to prevent thruster being left disabled
+            // call the enable all thrusters method this is done to prevent thruster being left disabled
             EnableAllThrusers();
         }
         /// <summary>
-        /// Setsup the thrusters returning a dict orderd into direction and thrusters
+        /// Setup the thrusters returning a dict sorted into direction and thrusters
         /// </summary>
-        /// <returns>Thrusters orderd into a dict using the orientaion enum as a key</returns>
+        /// <returns>Thrusters ordered into a dict using the orientation enum as a key</returns>
         /// <param name="orientation_block">Orientation block.</param>
         private IDictionary<Orientation, List<IMyThrust>> SetupThrusters(IMyTerminalBlock orientation_block)
         {
@@ -126,7 +126,7 @@ namespace IngameScript.DroneControl.thruster
 
             orientation_block.Orientation.GetMatrix(out relative_matrix);
 
-            // lookup the table to translate from orientation vecter to orientation enum
+            // lookup the table to translate from orientation vector to orientation enum
             IDictionary<Orientation, Vector3I> orientation_lookup = new Dictionary<Orientation, Vector3I>
             {
                 { Orientation.Up, new Vector3I(0, -1, 0) },
@@ -137,14 +137,14 @@ namespace IngameScript.DroneControl.thruster
                 { Orientation.Backward, new Vector3I(0, 0, -1) }
             };
 
-            // group each thruster by orientaion inside a dict
+            // group each thruster by orientation inside a dict
             foreach (IMyThrust thruster in thrusters)
             {
-                // reset the thruset overide
+                // reset the thrust override
                 thruster.ThrustOverridePercentage = 0.0f;
                 // get the orientation matrix
                 thruster.Orientation.GetMatrix(out thruster_matrix);
-                // loop through the looup dict attmpting to match the value
+                // loop through the lookup dict attempting to match the value
                 foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
                 {
                     // if the value matches add to thruster dict with the lookup key
@@ -161,12 +161,12 @@ namespace IngameScript.DroneControl.thruster
         }
 
         /// <summary>
-        /// Will apply a force eveanly over all the thrusters in a direction. Thrusers will be set to max output if force is to large.
-        /// The method currently assumes all thruseters in one direction can apply the same force (they are the same size).
+        /// Will apply a force evenly over all the thrusters in a direction. Thrusters will be set to max output if force is to large.
+        /// The method currently assumes all thrusters in one direction can apply the same force (they are the same size).
         /// </summary>
-        /// TODO update method to account for diffrent thruster.
-        /// <param name="force">Force in newtowns (N) to apply.</param>
-        /// <param name="direction">Direction force should be applyed.</param>
+        /// TODO update method to account for different thruster.
+        /// <param name="force">Force in newtons (N) to apply.</param>
+        /// <param name="direction">Direction force should be applied.</param>
         private void ApplyForce(double force, Orientation direction = Orientation.Forward)
         {
             //List<Orientation> disable = new List<Orientation>();
@@ -183,10 +183,10 @@ namespace IngameScript.DroneControl.thruster
                 force *= -1;
             }
 
-            // get the number of throusets
+            // get the number of thrusters
             float number_of_thrusters = thrusters[direction].Count();
 
-            // claculate the max force output
+            // calculate the max force output
             double max_force = GetMaxDirectionalForce(direction);
 
             // set the force to max if to large

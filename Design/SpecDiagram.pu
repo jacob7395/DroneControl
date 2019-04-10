@@ -59,6 +59,16 @@ package DroneControl {
         }
     }
 
+    package Systems {
+        class ShipSystems{
+            +Vector3D stopping_distances
+            +Vector3D velocity
+            +Task current_task
+            +IMyGridTerminalSystem GridTerminalSystem
+            +IMyRemoteControl controller
+        }
+    }
+
     package Camera {
         enum Camera_Mode {
             Collision_Avoidance
@@ -152,6 +162,6 @@ package DroneControl {
 
     DroneControl <-- ThrusterControl
     DroneControl <-- GyroControl
-    DroneControl }-- Task : Recives
+    DroneControl <-- Task : Recives
     DroneControl "1" -- "*" Camera
 }

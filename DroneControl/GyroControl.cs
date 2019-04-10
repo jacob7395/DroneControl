@@ -14,20 +14,21 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
 using IngameScript.DroneControl.utility;
+using IngameScript.DroneControl.Systems;
 
 namespace IngameScript.DroneControl.gyro
 {
     // Originally from: http://forums.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461
-    // This code has been refacted from the souce, the maths remains the same
+    // This code has been re-factored from the source, the maths remains the same
     public class GyroControl : IAutoControl
     {
 
         private List<IMyGyro> gyros = new List<IMyGyro>();
-        private IMyGridTerminalSystem GridTerminalSystem;
+        private ShipSystems systems;
 
-        public GyroControl(IMyGridTerminalSystem GridTerminalSystem)
+        public GyroControl(ShipSystems systems)
         {
-            this.GridTerminalSystem = GridTerminalSystem;
+            this.systems = systems;
             this.gyros = gyrosetup();   
         }
 
@@ -38,7 +39,7 @@ namespace IngameScript.DroneControl.gyro
         /// <param name="target">The vector for the aim.</param>
         /// <param name="orientation_block">The terminal block to use for orientation</param>
         /// <param name="gyro_power">The power usage between 0..1 defaults to 0.9</param>
-        /// <param name="min_angle">How tight to maintain aim in degress. Lower is tighter. Default is 5.0f</param>
+        /// <param name="min_angle">How tight to maintain aim in degrees. Lower is tighter. Default is 5.0f</param>
         /// <returns>true if aligned. Meaning the angle of error is less than minAngleRad</returns>
         public bool OrientShip(Orientation direction,
                         Vector3D target,
@@ -46,17 +47,17 @@ namespace IngameScript.DroneControl.gyro
                         double gyro_power = 0.9,
                         float min_angle = 5.0f)
         {
-            // get the position of the orientaion block
+            // get the position of the orientation block
             Vector3D location = orientation_block.GetPosition();
             // return argument used to indicate the min_angle_rad has been met
             bool aligned = true;
-            // convert form degress to rads
+            // convert form degrees to rads
             double min_angle_rad = (Math.PI / 180) * min_angle;
 
             Matrix orientation_matrix;
             orientation_block.Orientation.GetMatrix(out orientation_matrix);
 
-            // switch the correction setting the down matrix, this is how the orientraion direction is controled
+            // switch the correction setting the down matrix, this is how the orientation direction is controlled
             Vector3D down;
             switch (direction)
             {
@@ -83,12 +84,12 @@ namespace IngameScript.DroneControl.gyro
                     break;
             }
 
-            // do some magic beam riding, not sure exacly what this does
+            // do some magic beam riding, not sure exactly what this does
             Vector3D beam = BeamRider(location, target, orientation_block);
             beam.Normalize();
 
-            // applys maths that I dont quite understand but it works
-            // creadit goes to link given above
+            // this apples maths that I don't quite understand but it works
+            // credit goes to link given above
             foreach (IMyGyro gyro in this.gyros)
             {
                 gyro.Orientation.GetMatrix(out orientation_matrix);
@@ -104,7 +105,7 @@ namespace IngameScript.DroneControl.gyro
                 else
                     ang = Math.Atan2(ang, Math.Sqrt(Math.Max(0.0, 1.0 - ang * ang)));
 
-                // check if the gycro is pointing at the target
+                // check if the gyro is pointing at the target
                 if (ang < min_angle_rad)
                 {
                     gyro.GyroOverride = false;
@@ -141,7 +142,7 @@ namespace IngameScript.DroneControl.gyro
 
             List<IMyGyro> gyros = new List<IMyGyro>();
 
-            GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
+            systems.GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
 
             foreach (IMyGyro gyro in gyros)
             {
@@ -164,7 +165,7 @@ namespace IngameScript.DroneControl.gyro
         }
 
         /// <summary>
-        /// Draws a line between two vectors returning the corection required to align.
+        /// Draws a line between two vectors returning the correction required to align.
         /// </summary>
         /// <returns>The rider.</returns>
         /// <param name="start">V start.</param>

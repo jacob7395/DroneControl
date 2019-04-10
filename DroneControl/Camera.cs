@@ -14,15 +14,22 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
+using IngameScript.DroneControl.Systems;
 
 namespace IngameScript.DroneControl.Camera
 {
+    /// <summary>
+    /// Enum used to indicate operational mode
+    /// </summary>
     public enum Camera_Mode
     {
         collision_avoidence,
         deactivated
     }
 
+    /// <summary>
+    /// Given a mode the camera agent will work further it's goals.
+    /// </summary>
     public class CameraAgent
     {
         public MyDetectedEntityInfo collision_object;
@@ -30,16 +37,17 @@ namespace IngameScript.DroneControl.Camera
         public double active_range;
         public bool safe_point_avalible = false;
 
-        private IMyGridTerminalSystem GridTerminalSystem;
         private IMyCameraBlock cam;
         private List<Vector3D> collision_corrners = new List<Vector3D>();
         private Vector3D safe_point = Vector3D.PositiveInfinity;
 
-        public CameraAgent(IMyCameraBlock cam, IMyGridTerminalSystem GridTerminalSystem, double active_range = 2000)
+        private ShipSystems systems;
+
+        public CameraAgent(IMyCameraBlock cam, ShipSystems systems, double active_range = 2000)
         {
             this.cam = cam;
             this.active_range = active_range;
-            this.GridTerminalSystem = GridTerminalSystem;
+            this.systems = systems;
         }
 
         public void Run()

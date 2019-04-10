@@ -16,7 +16,6 @@ using VRageMath;
 using IngameScript.DroneControl;
 using IngameScript.DroneControl.utility.task;
 using IngameScript.DroneControl.utility;
-using IngameScript.DroneControl.Camera;
 
 namespace IngameScript
 {
@@ -33,17 +32,22 @@ namespace IngameScript
 
         public Program()
         {
+            // run the program per tick
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
+
 
             drone = new DroneControler(GridTerminalSystem);
 
+            // setup the GoTo action
             GoTo action = new GoTo(target3);
             action.Add_Point(target2);
             action.Add_Point(target1);
 
+            // create the task with the action
             Task task = new Task();
             task.Add_Action(action);
 
+            // pass the task to our drone
             drone.set_task(task);
 
             alive_count = 0;
@@ -55,7 +59,7 @@ namespace IngameScript
         public void Main(string argument, UpdateType updateSource)
         {
             Echo("Alive Count " + alive_count.ToString());
-            alive_count += 0.001;
+            alive_count += 1/60; // there are 60 ticks per simulation second
 
             drone.run();
         }

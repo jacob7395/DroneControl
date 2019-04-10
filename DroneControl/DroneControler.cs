@@ -28,7 +28,7 @@ namespace IngameScript.DroneControl
     /// </summary>
     public class DroneControler : IAutoControl
     {
-        private ShipSystems systems;
+        public ShipSystems systems;
         private IDictionary<Orientation, List<CameraAgent>> cameras;
         private GyroControl gyros;
         private ThrusterControl thrusters;
@@ -46,17 +46,17 @@ namespace IngameScript.DroneControl
         public DroneControler(IMyGridTerminalSystem GridTerminalSystem)
         {
             // get the main remote controller being used
-            IMyRemoteControl controler = GridTerminalSystem.GetBlockWithName("Controler") as IMyRemoteControl;
+            IMyRemoteControl controller = GridTerminalSystem.GetBlockWithName("Controler") as IMyRemoteControl;
             List<IMyRemoteControl> remote_controlers = new List<IMyRemoteControl>();
             GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(remote_controlers);
             foreach (IMyRemoteControl control in remote_controlers)
             {
-                controler = control;
+                controller = control;
                 break;
             }
 
             // setup the ship systems
-            this.systems = new ShipSystems(GridTerminalSystem, systems.controller);
+            this.systems = new ShipSystems(GridTerminalSystem, controller);
 
             // setup the orientation block to a ship connector or a controller if one was not found
             List<IMyShipConnector> ship_connectors = new List<IMyShipConnector>();
@@ -216,6 +216,8 @@ namespace IngameScript.DroneControl
         /// </summary>
         public void run()
         {
+            this.thrusters.run();
+            
             if (this.current_task != null)
             {       
                 DroneAction current_action;
@@ -233,15 +235,18 @@ namespace IngameScript.DroneControl
                         foreach (CameraAgent cam in this.cameras[Orientation.Forward])
                         {
                             cam.Run();
-
-                            if (cam.safe_point_avalible)
-                            {
-                                goto_action.Add_Point(cam.GetSafePoint());
-                            }
                         }
-                        
+
+                        // ToDo integrate the task with the system object a controlled put and get with safe point
+                        // should help
+                        if (this.systems.safe_point != Vector3D.PositiveInfinity)
+                            goto_action.Add_Point(this.systems.safe_point);
+
                         if (this.GoTo(goto_action.Next_Point()) == true)
                         {
+                            // reset the safe point
+                            this.systems.safe_point = systems.DEFAULT_SAFE_POINT;
+                            // tell the task the action is complete, then check if the task is complete
                             if (goto_action.Complete() == false)
                                 this.current_task = null;
                         }

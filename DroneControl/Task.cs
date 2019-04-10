@@ -150,7 +150,8 @@ namespace IngameScript.DroneControl.utility.task
 
         public void Add_Point(Vector3D point)
         {
-            route.Insert(0, point);
+            if (this.route[0] != point)
+                route.Insert(0, point);
         }
 
         public override string Serialize()

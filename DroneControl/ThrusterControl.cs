@@ -28,9 +28,9 @@ namespace IngameScript.DroneControl.thruster
         private ShipSystems systems;
 
         /// <summary>
-        /// the max speed for the thrusters, this may be possible to set using the grid
+        /// The thrusters will attempt to reach
         /// </summary>
-        public const float MAX_SPEED = 400;
+        private Vector3D target_velocity = new Vector3D(0,0,0);
 
         /// <summary>
         /// Velocity is represented in local space where -Z is forward.
@@ -51,12 +51,13 @@ namespace IngameScript.DroneControl.thruster
             }
             set
             {
-                this.SetVelocity(value.X, direction: Orientation.Right);
-                this.SetVelocity(value.Y, direction: Orientation.Up);
-                this.SetVelocity(value.Z, direction: Orientation.Backward);
+                this.target_velocity = value;
             }
         }
 
+        /// <summary>
+        /// Calculates the stopping distance for every axis.
+        /// </summary>
         public Vector3D stopping_distances
         {
             get
@@ -73,6 +74,8 @@ namespace IngameScript.DroneControl.thruster
 
         public ThrusterControl(ShipSystems systems, IMyTerminalBlock orientation_block)
         {
+            this.systems = systems;
+
             thrusters = SetupThrusters(orientation_block);
 
             // call the enable all thrusters method this is done to prevent thruster being left disabled
@@ -263,6 +266,11 @@ namespace IngameScript.DroneControl.thruster
             // update the ships systems
             this.systems.velocity = this.velocity;
             this.systems.stopping_distance = this.stopping_distances;
+
+
+            this.SetVelocity(this.target_velocity.X, direction: Orientation.Right);
+            this.SetVelocity(this.target_velocity.Y, direction: Orientation.Up);
+            this.SetVelocity(this.target_velocity.Z, direction: Orientation.Backward);
         }
         
         /// <summary>

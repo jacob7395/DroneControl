@@ -32,14 +32,11 @@ namespace IngameScript.DroneControl.Camera
     /// </summary>
     public class CameraAgent
     {
-        public MyDetectedEntityInfo collision_object;
         public Camera_Mode mode;
         public double active_range;
         public bool safe_point_avalible = false;
 
         private IMyCameraBlock cam;
-        private List<Vector3D> collision_corrners = new List<Vector3D>();
-        private Vector3D safe_point = Vector3D.PositiveInfinity;
 
         private ShipSystems systems;
 
@@ -54,48 +51,52 @@ namespace IngameScript.DroneControl.Camera
         {
             cam.EnableRaycast = true;
 
-            if (cam.CanScan(active_range) && collision_object.IsEmpty())
+            // check if the camera can scan along the velocity vector
+            if (cam.CanScan(this.systems.velocity) && this.systems.collision_object.IsEmpty())
             {
-                collision_object = cam.Raycast(active_range);
-
-                if (!collision_object.IsEmpty())
+                // check if the camera can reach the range
+                if (cam.CanScan(this.systems.stopping_distance.Length() * 1.5, this.systems.velocity))
                 {
-                    Vector3D[] cornners;
-                    cornners = collision_object.BoundingBox.GetCorners();
+                    this.systems.collision_object = cam.Raycast(active_range);
 
-                    foreach (Vector3D corner in cornners)
-                        collision_corrners.Add(corner);
+                    if (!this.systems.collision_object.IsEmpty())
+                    {
+                        Vector3D[] cornners;
+                        cornners = this.systems.collision_object.BoundingBox.GetCorners();
+
+                        foreach (Vector3D corner in cornners)
+                            this.systems.collision_corrners.Add(corner);
+                    }
                 }
             }
-
-            if (collision_corrners.Count > 0)
-                foreach (Vector3D corner in collision_corrners)
+            // check if collision corners need checking
+            else if (this.systems.collision_corrners.Count > 0)
+                foreach (Vector3D corner in this.systems.collision_corrners)
                 {
                     double distance = Vector3D.Distance(corner, cam.GetPosition());
-                    if (cam.CanScan(distance*1.5, corner))
+                    if (cam.CanScan(distance * 1.5, corner))
                     {
                         MyDetectedEntityInfo corner_scan = cam.Raycast(distance * 1.5, corner);
 
                         if (corner_scan.IsEmpty())
                         {
-                            this.safe_point = corner;
-                            this.safe_point_avalible = true;
-                            collision_object = new MyDetectedEntityInfo();
-                            collision_corrners.Clear();
+                            this.systems.safe_point = corner;
+                            this.systems.collision_object = new MyDetectedEntityInfo();
+                            this.systems.collision_corrners.Clear();
                         }
                         else
-                            collision_corrners.Remove(corner);
+                            this.systems.collision_corrners.Remove(corner);
                         break;
                     }
                 }
-        }
-
-        public Vector3D GetSafePoint()
-        {
-            Vector3D temp = safe_point;
-            safe_point = Vector3D.PositiveInfinity;
-            this.safe_point_avalible = false;
-            return temp;
+            //else try and check the safe point
+            else if (cam.CanScan(this.systems.safe_point))
+            {
+                this.systems.collision_object = cam.Raycast(this.systems.safe_point);
+                // if the safe point is not safe reset the value
+                if (!this.systems.collision_object.IsEmpty())
+                    this.systems.safe_point = Vector3D.PositiveInfinity;
+            }
         }
     }
 }

@@ -56,9 +56,11 @@ namespace IngameScript
         public void Main(string argument, UpdateType updateSource)
         {
             Echo("Alive Count " + alive_count.ToString());
-            alive_count += 1/60; // there are 60 ticks per simulation second
+            alive_count += (1/60); // there are 60 ticks per simulation second
 
             drone.run();
+
+            Echo(drone.systems.velocity.ToString());
         }
     }
 }

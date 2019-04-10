@@ -27,10 +27,26 @@ namespace IngameScript.DroneControl.Systems
         public Task current_task = null;
         public IMyGridTerminalSystem GridTerminalSystem;
         public IMyShipController controller;
+        public double max_speed = 400;
+
+        // collision data used by all camera agents
+        
+        public Vector3D DEFAULT_SAFE_POINT
+        {
+            get
+            {
+                return Vector3D.PositiveInfinity;
+            }
+        }
+
+        public MyDetectedEntityInfo collision_object = new MyDetectedEntityInfo();
+        public Vector3D safe_point = Vector3D.PositiveInfinity;
+        public List<Vector3D> collision_corrners = new List<Vector3D>();
+
 
         public ShipSystems(IMyGridTerminalSystem gridTerminalSystem, IMyShipController controller)
         {
-            GridTerminalSystem = gridTerminalSystem;
+            this.GridTerminalSystem = gridTerminalSystem;
             this.controller = controller;
         }
     }

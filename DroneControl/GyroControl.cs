@@ -22,7 +22,6 @@ namespace IngameScript.DroneControl.gyro
     // This code has been re-factored from the source, the maths remains the same
     public class GyroControl : IAutoControl
     {
-
         private List<IMyGyro> gyros = new List<IMyGyro>();
         private ShipSystems systems;
 

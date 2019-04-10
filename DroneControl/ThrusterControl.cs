@@ -85,7 +85,6 @@ namespace IngameScript.DroneControl.thruster
         /// <param name="orientation_block">Orientation block.</param>
         private IDictionary<Orientation, List<IMyThrust>> SetupThrusters(IMyTerminalBlock orientation_block)
         {
-
             List<IMyThrust> thrusters = new List<IMyThrust>();
             systems.GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
 

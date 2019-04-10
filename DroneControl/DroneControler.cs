@@ -23,7 +23,6 @@ using IngameScript.DroneControl.Systems;
 
 namespace IngameScript.DroneControl
 {
-
     /// <summary>
     /// Class that implements control over a ship.
     /// </summary>
@@ -67,13 +66,9 @@ namespace IngameScript.DroneControl
             else
                 this.orientation_block = systems.controller;
 
-
-
             this.gyros = new GyroControl(this.systems);
             this.thrusters = new ThrusterControl(this.systems, GridTerminalSystem.GetBlockWithName("Control Unit"));
-
-            
-
+           
             this.cameras = new Dictionary<Orientation, List<CameraAgent>>();
             // initialize list for all directions
             foreach (Orientation direction in Enum.GetValues(typeof(Orientation)))
@@ -104,7 +99,6 @@ namespace IngameScript.DroneControl
                 // loop through the lookup dictionary attempting to match the value
                 foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
                 {
-
                     // if the value matches add to camera dictionary with the lookup key
                     if (cam_matrix.Forward == lookup.Value)
                     {
@@ -222,7 +216,6 @@ namespace IngameScript.DroneControl
         /// </summary>
         public void run()
         {
- 
             if (this.current_task != null)
             {       
                 DroneAction current_action;
@@ -255,7 +248,6 @@ namespace IngameScript.DroneControl
                         break;
                 }
             }
- 
         }
     }
 }

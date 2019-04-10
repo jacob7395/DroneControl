@@ -21,7 +21,6 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-
         DroneControler drone;
         Vector3D target1 = new Vector3D(37.64, 73.47, -186.15);
         Vector3D target2 = new Vector3D(-19.5, -105.5, -59.5);
@@ -34,7 +33,6 @@ namespace IngameScript
         {
             // run the program per tick
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
-
 
             drone = new DroneControler(GridTerminalSystem);
 
@@ -54,7 +52,6 @@ namespace IngameScript
 
             current_target = target1;
         }
-
 
         public void Main(string argument, UpdateType updateSource)
         {

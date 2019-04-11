@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using VRageMath;
+using IngameScript.DroneControl.Systems;
 
 namespace IngameScript.DroneControl.thruster
 {
@@ -20,19 +21,16 @@ namespace IngameScript.DroneControl.thruster
         /// dictionary holding lists of thrusters with the direction as a key
         /// </summary>
         private IDictionary<Orientation, List<IMyThrust>> thrusters;
-        /// <summary>
-        /// reference to grid terminal system
-        /// </summary>
-        private IMyGridTerminalSystem GridTerminalSystem;
-        /// <summary>
-        /// reference for the control block
-        /// </summary>
-        private IMyShipController control_block;
 
         /// <summary>
-        /// the max speed for the thrusters, this may be possible to set using the grid
+        /// ship information is used withing the ship systems
         /// </summary>
-        public const float MAX_SPEED = 400;
+        private ShipSystems systems;
+
+        /// <summary>
+        /// The thrusters will attempt to reach
+        /// </summary>
+        private Vector3D target_velocity = new Vector3D(0,0,0);
 
         /// <summary>
         /// Velocity is represented in local space where -Z is forward.
@@ -44,8 +42,8 @@ namespace IngameScript.DroneControl.thruster
         {
             get
             {
-                MatrixD world_matrix = control_block.WorldMatrix;
-                Vector3D world_velocity = control_block.GetShipVelocities().LinearVelocity;
+                MatrixD world_matrix = systems.controller.WorldMatrix;
+                Vector3D world_velocity = systems.controller.GetShipVelocities().LinearVelocity;
                 // translate from world to local velocity
                 Vector3D local_velocity = Vector3D.TransformNormal(world_velocity, MatrixD.Transpose(world_matrix));
 
@@ -53,24 +51,64 @@ namespace IngameScript.DroneControl.thruster
             }
             set
             {
-                this.SetVelocity(value.X, direction: Orientation.Right);
-                this.SetVelocity(value.Y, direction: Orientation.Up);
-                this.SetVelocity(value.Z, direction: Orientation.Backward);
+                this.target_velocity = value;
             }
         }
 
+        /// <summary>
+        /// Calculates the stopping distance for every axis.
+        /// </summary>
         public Vector3D stopping_distances
         {
             get
             {
                 Vector3D stopping = new Vector3D();
 
-                stopping.Z = this.stopping_distance(direction: Orientation.Backward);
-                stopping.Y = this.stopping_distance(direction: Orientation.Up);
-                stopping.X = this.stopping_distance(direction: Orientation.Right);
+                stopping.Z = this.StoppingDistance(direction: Orientation.Backward);
+                stopping.Y = this.StoppingDistance(direction: Orientation.Up);
+                stopping.X = this.StoppingDistance(direction: Orientation.Right);
 
                 return stopping;
             }
+        }
+
+        public ThrusterControl(ShipSystems systems)
+        {
+            this.systems = systems;
+
+            this.thrusters = SetupThrusters();
+            // call the enable all thrusters method this is done to prevent thruster being left disabled
+            EnableAllThrusers();
+        }
+        /// <summary>
+        /// Setup the thrusters returning a dictionary sorted into direction and thrusters
+        /// </summary>
+        /// <returns>Thrusters ordered into a dictionary using the orientation enum as a key</returns>
+        private IDictionary<Orientation, List<IMyThrust>> SetupThrusters()
+        {
+            List<IMyThrust> thrusters = new List<IMyThrust>();
+            systems.GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
+
+            IDictionary<Orientation, List<IMyThrust>> ordered_thrusters = new Dictionary<Orientation, List<IMyThrust>>();
+            // initialize list for all directions
+            foreach (Orientation direction in Enum.GetValues(typeof(Orientation)))
+                ordered_thrusters.Add(direction, new List<IMyThrust>());
+            
+            // group each thruster by orientation inside a dictionary
+            foreach (IMyThrust thruster in thrusters)
+            {
+                // reset the thrust override
+                thruster.ThrustOverridePercentage = 0.0f;
+
+                Orientation thruster_orentation = systems.BlockOrentaion(thruster);
+                // if the value matches add to thruster dictionary with the lookup key
+                if (thruster_orentation != Orientation.None)
+                {
+                    thruster_orentation = thruster_orentation.inverse();
+                    ordered_thrusters[thruster_orentation].Add(thruster);
+                } 
+            }
+            return ordered_thrusters;
         }
 
         /// <summary>
@@ -79,12 +117,12 @@ namespace IngameScript.DroneControl.thruster
         /// </summary>
         /// <param name="direction"></param>
         /// <returns></returns>
-        private double stopping_distance(Orientation direction = Orientation.Forward)
+        private double StoppingDistance(Orientation direction = Orientation.Forward)
         {
             // get the velocity in the given direction
             double directional_velocity = direction.CalcVelocity(this.velocity);
 
-            double mass = this.control_block.CalculateShipMass().TotalMass;
+            double mass = systems.controller.CalculateShipMass().TotalMass;
 
             // if the velocity is negative reverse the direction
             if (directional_velocity > 0)
@@ -93,71 +131,14 @@ namespace IngameScript.DroneControl.thruster
             // calculate the force needed to stop in the given direction
             double max_force_output = GetMaxDirectionalForce(direction);
 
+            double distance = 0;
+            if (max_force_output <= 0)
+                distance = double.NegativeInfinity;
+            else
+                distance = Math.Pow(directional_velocity, 2) / (2 * max_force_output / mass) * Math.Sign(directional_velocity);
+
             // calculates the stopping distance then apply the sign from the velocity
-            return Math.Pow(directional_velocity, 2) / (2 * max_force_output / mass) * Math.Sign(directional_velocity);
-        }
-
-        public ThrusterControl(IMyGridTerminalSystem GridTerminalSystem, IMyTerminalBlock orientation_block, IMyShipController control_block)
-        {
-            this.GridTerminalSystem = GridTerminalSystem;
-            thrusters = SetupThrusters(orientation_block);
-            this.control_block = control_block;
-
-            // call the enable all thrusters method this is done to prevent thruster being left disabled
-            EnableAllThrusers();
-        }
-        /// <summary>
-        /// Setup the thrusters returning a dict sorted into direction and thrusters
-        /// </summary>
-        /// <returns>Thrusters ordered into a dict using the orientation enum as a key</returns>
-        /// <param name="orientation_block">Orientation block.</param>
-        private IDictionary<Orientation, List<IMyThrust>> SetupThrusters(IMyTerminalBlock orientation_block)
-        {
-
-            List<IMyThrust> thrusters = new List<IMyThrust>();
-            GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
-
-            IDictionary<Orientation, List<IMyThrust>> ordered_thrusters = new Dictionary<Orientation, List<IMyThrust>>();
-            // init list for all directions
-            foreach (Orientation direction in Enum.GetValues(typeof(Orientation)))
-                ordered_thrusters.Add(direction, new List<IMyThrust>());
-
-            Matrix relative_matrix = new Matrix(), thruster_matrix = new Matrix();
-
-            orientation_block.Orientation.GetMatrix(out relative_matrix);
-
-            // lookup the table to translate from orientation vector to orientation enum
-            IDictionary<Orientation, Vector3I> orientation_lookup = new Dictionary<Orientation, Vector3I>
-            {
-                { Orientation.Up, new Vector3I(0, -1, 0) },
-                { Orientation.Down, new Vector3I(0, 1, 0) },
-                { Orientation.Left, new Vector3I(1, 0, 0) },
-                { Orientation.Right, new Vector3I(-1, 0, 0) },
-                { Orientation.Forward, new Vector3I(0, 0, 1) },
-                { Orientation.Backward, new Vector3I(0, 0, -1) }
-            };
-
-            // group each thruster by orientation inside a dict
-            foreach (IMyThrust thruster in thrusters)
-            {
-                // reset the thrust override
-                thruster.ThrustOverridePercentage = 0.0f;
-                // get the orientation matrix
-                thruster.Orientation.GetMatrix(out thruster_matrix);
-                // loop through the lookup dict attempting to match the value
-                foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
-                {
-                    // if the value matches add to thruster dict with the lookup key
-                    if (thruster.GridThrustDirection == lookup.Value)
-                    {
-                        ordered_thrusters[lookup.Key].Add(thruster);
-                        // now match has been found break out of lookup
-                        break;
-                    }
-                }
-            }
-
-            return ordered_thrusters;
+            return distance;
         }
 
         /// <summary>
@@ -204,19 +185,19 @@ namespace IngameScript.DroneControl.thruster
         }
 
         /// <summary>
-        /// Caculates the force required to accelerate the ship at the given speed.
+        /// Calculates the force required to accelerate the ship at the given speed.
         /// </summary>
-        /// <param name="acceleration">Default to fmax</param>
-        /// <param name="direction">Default to foward</param>
+        /// <param name="acceleration">Default to FMax</param>
+        /// <param name="direction">Default to forward</param>
         private void Apple_Acceleration(double acceleration = double.MaxValue, Orientation direction = Orientation.Forward)
         {
-            double mass = this.control_block.CalculateShipMass().TotalMass;
+            double mass = systems.controller.CalculateShipMass().TotalMass;
             // call the force method
             ApplyForce(acceleration * mass, direction);
         }
 
         /// <summary>
-        /// Apply the acceleration requred to set the speed as indicated.
+        /// Apply the acceleration required to set the speed as indicated.
         /// </summary>
         /// <param name="target">The speed target</param>
         /// <param name="direction">The direction to set velocity</param>
@@ -253,14 +234,26 @@ namespace IngameScript.DroneControl.thruster
         }
 
         /// <summary>
-        /// Will set the thruster overide value to the percent given in the desired direction.
+        /// Will set the thruster override value to the percent given in the desired direction.
         /// </summary>
-        /// <param name="percent">Overide percent</param>
-        /// <param name="direction">Direction to overide</param>
+        /// <param name="percent">Override percent</param>
+        /// <param name="direction">Direction to override</param>
         private void OverideThrusters(float percent = 0.0f, Orientation direction = Orientation.Forward)
         {
             foreach (IMyThrust thruster in thrusters[direction])
                 thruster.ThrustOverridePercentage = percent;
+        }
+
+        public void run()
+        {
+            // update the ships systems
+            this.systems.velocity = this.velocity;
+            this.systems.stopping_distance = this.stopping_distances;
+
+
+            this.SetVelocity(this.target_velocity.X, direction: Orientation.Right);
+            this.SetVelocity(this.target_velocity.Y, direction: Orientation.Up);
+            this.SetVelocity(this.target_velocity.Z, direction: Orientation.Backward);
         }
         
         /// <summary>
@@ -268,7 +261,7 @@ namespace IngameScript.DroneControl.thruster
         /// </summary>
         public void DisableAuto()
         {
-            control_block.DampenersOverride = true;
+            systems.controller.DampenersOverride = true;
             foreach (KeyValuePair<Orientation, List<IMyThrust>> thruster_list in this.thrusters)
                 foreach (IMyThrust thruster in thruster_list.Value)
                 {
@@ -277,6 +270,4 @@ namespace IngameScript.DroneControl.thruster
                 }
         }
     }
-
-
 }

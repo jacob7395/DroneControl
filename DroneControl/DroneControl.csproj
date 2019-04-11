@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Camera.cs" />
+    <Compile Include="Systems.cs" />
     <Compile Include="Task.cs" />
     <Compile Include="DroneControler.cs" />
     <Compile Include="ThrusterControl.cs" />

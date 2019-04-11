@@ -17,7 +17,6 @@ using VRageMath;
 
 namespace IngameScript.DroneControl.utility.task
 {
-
     /// <summary>
     /// A task object hold several actions and provides an interface to access the actions.
     /// 
@@ -71,10 +70,7 @@ namespace IngameScript.DroneControl.utility.task
         /// Attempts to deserialize an action then add it to the que
         /// </summary>
         /// <param name="action"></param>
-        public void Add_Action(String action)
-        {
-            
-        }
+        public void Add_Action(String action) {}
     }
 
     /// <summary>
@@ -125,7 +121,6 @@ namespace IngameScript.DroneControl.utility.task
 
         List<Vector3D> route;
 
-
         public GoTo(Vector3D target, float tolorance = 5)
         {
             this.tolorance = tolorance;
@@ -155,7 +150,8 @@ namespace IngameScript.DroneControl.utility.task
 
         public void Add_Point(Vector3D point)
         {
-            route.Insert(0, point);
+            if (this.route[0] != point)
+                route.Insert(0, point);
         }
 
         public override string Serialize()

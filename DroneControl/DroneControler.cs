@@ -33,7 +33,7 @@ namespace IngameScript.DroneControl
         private GyroControl gyros;
         private ThrusterControl thrusters;
 
-        private Task current_task = null;
+        public Task current_task = null;
 
         private IMyTerminalBlock orientation_block;
 
@@ -239,7 +239,7 @@ namespace IngameScript.DroneControl
 
                         // ToDo integrate the task with the system object a controlled put and get with safe point
                         // should help
-                        if (this.systems.safe_point != Vector3D.PositiveInfinity)
+                        if (this.systems.safe_point != systems.DEFAULT_SAFE_POINT)
                             goto_action.Add_Point(this.systems.safe_point);
 
                         if (this.GoTo(goto_action.Next_Point()) == true)

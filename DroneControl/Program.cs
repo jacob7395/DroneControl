@@ -25,7 +25,8 @@ namespace IngameScript
         Vector3D target1 = new Vector3D(37.64, 73.47, -186.15);
         Vector3D target2 = new Vector3D(-19.5, -105.5, -59.5);
         Vector3D target3 = new Vector3D(-28.68, -435.98, 829.41);
-        Vector3D current_target = new Vector3D();
+        Task task = new Task();
+
 
         double alive_count;
 
@@ -42,25 +43,27 @@ namespace IngameScript
             action.Add_Point(target1);
 
             // create the task with the action
-            Task task = new Task();
+            
             task.Add_Action(action);
 
             // pass the task to our drone
             drone.set_task(task);
 
             alive_count = 0;
-
-            current_target = target1;
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
             Echo("Alive Count " + alive_count.ToString());
-            alive_count += (1/60); // there are 60 ticks per simulation second
+            alive_count += (0.0166666); // there are 60 ticks per simulation second
 
             drone.run();
 
-            Echo(drone.systems.velocity.ToString());
+            Vector3D next = drone.systems.safe_point;
+            Echo(next.ToString());
+            
+            GoTo action = drone.current_task.Get_Next_Action() as GoTo;
+            Echo(action.Next_Point().ToString());
         }
     }
 }

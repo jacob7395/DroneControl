@@ -72,12 +72,11 @@ namespace IngameScript.DroneControl.thruster
             }
         }
 
-        public ThrusterControl(ShipSystems systems, IMyTerminalBlock orientation_block)
+        public ThrusterControl(ShipSystems systems)
         {
             this.systems = systems;
 
-            thrusters = SetupThrusters(orientation_block);
-
+            this.thrusters = SetupThrusters();
             // call the enable all thrusters method this is done to prevent thruster being left disabled
             EnableAllThrusers();
         }
@@ -85,8 +84,7 @@ namespace IngameScript.DroneControl.thruster
         /// Setup the thrusters returning a dictionary sorted into direction and thrusters
         /// </summary>
         /// <returns>Thrusters ordered into a dictionary using the orientation enum as a key</returns>
-        /// <param name="orientation_block">Orientation block.</param>
-        private IDictionary<Orientation, List<IMyThrust>> SetupThrusters(IMyTerminalBlock orientation_block)
+        private IDictionary<Orientation, List<IMyThrust>> SetupThrusters()
         {
             List<IMyThrust> thrusters = new List<IMyThrust>();
             systems.GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
@@ -95,42 +93,21 @@ namespace IngameScript.DroneControl.thruster
             // initialize list for all directions
             foreach (Orientation direction in Enum.GetValues(typeof(Orientation)))
                 ordered_thrusters.Add(direction, new List<IMyThrust>());
-
-            Matrix relative_matrix = new Matrix(), thruster_matrix = new Matrix();
-
-            orientation_block.Orientation.GetMatrix(out relative_matrix);
-
-            // lookup the table to translate from orientation vector to orientation enum
-            IDictionary<Orientation, Vector3I> orientation_lookup = new Dictionary<Orientation, Vector3I>
-            {
-                { Orientation.Up, new Vector3I(0, -1, 0) },
-                { Orientation.Down, new Vector3I(0, 1, 0) },
-                { Orientation.Left, new Vector3I(1, 0, 0) },
-                { Orientation.Right, new Vector3I(-1, 0, 0) },
-                { Orientation.Forward, new Vector3I(0, 0, 1) },
-                { Orientation.Backward, new Vector3I(0, 0, -1) }
-            };
-
+            
             // group each thruster by orientation inside a dictionary
             foreach (IMyThrust thruster in thrusters)
             {
                 // reset the thrust override
                 thruster.ThrustOverridePercentage = 0.0f;
-                // get the orientation matrix
-                thruster.Orientation.GetMatrix(out thruster_matrix);
-                // loop through the lookup dictionary attempting to match the value
-                foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
-                {
-                    // if the value matches add to thruster dictionary with the lookup key
-                    if (thruster.GridThrustDirection == lookup.Value)
-                    {
-                        ordered_thrusters[lookup.Key].Add(thruster);
-                        // now match has been found break out of lookup
-                        break;
-                    }
-                }
-            }
 
+                Orientation thruster_orentation = systems.BlockOrentaion(thruster);
+                // if the value matches add to thruster dictionary with the lookup key
+                if (thruster_orentation != Orientation.None)
+                {
+                    thruster_orentation = thruster_orentation.inverse();
+                    ordered_thrusters[thruster_orentation].Add(thruster);
+                } 
+            }
             return ordered_thrusters;
         }
 
@@ -154,8 +131,14 @@ namespace IngameScript.DroneControl.thruster
             // calculate the force needed to stop in the given direction
             double max_force_output = GetMaxDirectionalForce(direction);
 
+            double distance = 0;
+            if (max_force_output <= 0)
+                distance = double.NegativeInfinity;
+            else
+                distance = Math.Pow(directional_velocity, 2) / (2 * max_force_output / mass) * Math.Sign(directional_velocity);
+
             // calculates the stopping distance then apply the sign from the velocity
-            return Math.Pow(directional_velocity, 2) / (2 * max_force_output / mass) * Math.Sign(directional_velocity);
+            return distance;
         }
 
         /// <summary>

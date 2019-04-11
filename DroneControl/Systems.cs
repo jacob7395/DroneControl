@@ -16,6 +16,7 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
 using IngameScript.DroneControl.utility.task;
+using IngameScript.DroneControl.utility;
 
 namespace IngameScript.DroneControl.Systems
 {
@@ -48,6 +49,38 @@ namespace IngameScript.DroneControl.Systems
         {
             this.GridTerminalSystem = gridTerminalSystem;
             this.controller = controller;
+        }
+
+        public Orientation BlockOrentaion(IMyTerminalBlock block)
+        {
+            Orientation block_orientation = Orientation.None;
+
+            Matrix block_matrix = new Matrix();
+            block.Orientation.GetMatrix(out block_matrix);
+
+            // lookup the table to translate from orientation vector to orientation enum
+            // declaring this else ware may save process time
+            IDictionary<Orientation, Vector3I> orientation_lookup = new Dictionary<Orientation, Vector3I>
+            {
+                { Orientation.Up, new Vector3I(0, 1, 0) },
+                { Orientation.Down, new Vector3I(0, -1, 0) },
+                { Orientation.Left, new Vector3I(-1, 0, 0) },
+                { Orientation.Right, new Vector3I(1, 0, 0) },
+                { Orientation.Forward, new Vector3I(0, 0, -1) },
+                { Orientation.Backward, new Vector3I(0, 0, 1) }
+            };
+
+            foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
+            {
+                // if the value matches add to camera dictionary with the lookup key
+                if (block_matrix.Forward == lookup.Value)
+                {
+                    block_orientation = lookup.Key;
+                    break;
+                }
+            }
+
+            return block_orientation;
         }
     }
 }

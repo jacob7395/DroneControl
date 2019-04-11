@@ -26,6 +26,7 @@ namespace IngameScript.DroneControl.utility
     /// </summary>
     public enum Orientation
     {
+        None = 0,
         Up = -1,
         Down = 1,
         Backward = -2,
@@ -35,12 +36,12 @@ namespace IngameScript.DroneControl.utility
     }
 
     /// <summary>
-    /// A static class holding operations for enums and generic methods.
+    /// A static class holding operations for enum and generic methods.
     /// </summary>
     static class Utility
     {
         /// <summary>
-        /// Retuns the inverse direction e.g given forwared will return backward.
+        /// Returns the inverse direction e.g given forward will return backward.
         /// </summary>
         /// <param name="direction"></param>
         /// <returns>The opposite direction</returns>
@@ -49,8 +50,8 @@ namespace IngameScript.DroneControl.utility
             return (Orientation)(-(int)direction);
         }
         /// <summary>
-        /// Extract the relative grid volocity for a given direction.
-        /// Foward = -Z
+        /// Extract the relative grid velocity for a given direction.
+        /// Forward = -Z
         /// Backward = Z
         /// Right = X
         /// Left = -X
@@ -59,7 +60,7 @@ namespace IngameScript.DroneControl.utility
         /// </summary>
         /// <param name="direction"></param>
         /// <param name="velocity_vectore"></param>
-        /// <returns>The ship volocity in a given direction</returns>
+        /// <returns>The ship velocity in a given direction</returns>
         public static double CalcVelocity(this Orientation direction, Vector3D velocity_vectore)
         {
             double directional_velocity = 0;

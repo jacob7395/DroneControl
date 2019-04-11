@@ -37,8 +37,6 @@ namespace IngameScript.DroneControl
 
         private IMyTerminalBlock orientation_block;
 
-        private double max_speed = 400;
-
         /// <summary>
         /// Initialize the control groups and wait for a task to be given.
         /// </summary>
@@ -67,44 +65,27 @@ namespace IngameScript.DroneControl
                 this.orientation_block = systems.controller;
 
             this.gyros = new GyroControl(this.systems);
-            this.thrusters = new ThrusterControl(this.systems, GridTerminalSystem.GetBlockWithName("Control Unit"));
-           
+            this.thrusters = new ThrusterControl(this.systems);
             this.cameras = new Dictionary<Orientation, List<CameraAgent>>();
             // initialize list for all directions
             foreach (Orientation direction in Enum.GetValues(typeof(Orientation)))
                 this.cameras.Add(direction, new List<CameraAgent>());
 
-            // lookup the table to translate from orientation vector to orientation enum
-            IDictionary<Orientation, Vector3I> orientation_lookup = new Dictionary<Orientation, Vector3I>
-            {
-                { Orientation.Up, new Vector3I(0, 1, 0) },
-                { Orientation.Down, new Vector3I(0, -1, 0) },
-                { Orientation.Left, new Vector3I(-1, 0, 0) },
-                { Orientation.Right, new Vector3I(1, 0, 0) },
-                { Orientation.Forward, new Vector3I(0, 0, -1) },
-                { Orientation.Backward, new Vector3I(0, 0, 1) }
-            };
-
             // setup camera agents
             List<IMyCameraBlock> cams = new List<IMyCameraBlock>();
             GridTerminalSystem.GetBlocksOfType<IMyCameraBlock>(cams);
 
-            Matrix cam_matrix = new Matrix();
             foreach (IMyCameraBlock cam in cams)
             {
                 // initialize the camera object
                 CameraAgent temp_agent = new CameraAgent(cam, this.systems);
 
-                cam.Orientation.GetMatrix(out cam_matrix);
-                // loop through the lookup dictionary attempting to match the value
-                foreach (KeyValuePair<Orientation, Vector3I> lookup in orientation_lookup)
+                Orientation cam_orentation = systems.BlockOrentaion(cam);
+                // if the value matches add to camera dictionary with the lookup key
+                if (cam_orentation != Orientation.None)
                 {
-                    // if the value matches add to camera dictionary with the lookup key
-                    if (cam_matrix.Forward == lookup.Value)
-                    {
-                        this.cameras[lookup.Key].Add(temp_agent);
-                        break;
-                    }
+                    this.cameras[cam_orentation].Add(temp_agent);
+                    break;
                 }
             }
         }
@@ -182,7 +163,9 @@ namespace IngameScript.DroneControl
         /// </summary>
         /// <param name="Target"></param>
         private bool GoTo(Vector3D Target)
-        {                
+        {
+
+
             Vector3D target = this.get_local_space(Target);
             Vector3D stopping_distances = this.thrusters.stopping_distances;
 
@@ -192,7 +175,8 @@ namespace IngameScript.DroneControl
 
             target_diff = target - stopping_distances;
 
-            target_speed_scaled = target_diff / target_diff.Length() * max_speed;
+            target_speed_scaled = target_diff / target_diff.Length() * systems.max_speed;
+
 
             target_speed.X = Math.Min(Math.Abs(target_diff.X), Math.Abs(target_speed_scaled.X)) * Math.Sign(target_diff.X);
             target_speed.Y = Math.Min(Math.Abs(target_diff.Y), Math.Abs(target_speed_scaled.Y)) * Math.Sign(target_diff.Y);
@@ -238,7 +222,6 @@ namespace IngameScript.DroneControl
                         }
 
                         // ToDo integrate the task with the system object a controlled put and get with safe point
-                        // should help
                         if (this.systems.safe_point != systems.DEFAULT_SAFE_POINT)
                             goto_action.Add_Point(this.systems.safe_point);
 

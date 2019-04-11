@@ -59,11 +59,7 @@ namespace IngameScript
 
             drone.run();
 
-            Vector3D next = drone.systems.safe_point;
-            Echo(next.ToString());
-            
-            GoTo action = drone.current_task.Get_Next_Action() as GoTo;
-            Echo(action.Next_Point().ToString());
+            Echo(drone.systems.stopping_distance.ToString());
         }
     }
 }

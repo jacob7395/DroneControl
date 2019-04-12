@@ -25,10 +25,13 @@ namespace IngameScript.DroneControl.gyro
         private List<IMyGyro> gyros = new List<IMyGyro>();
         private ShipSystems systems;
 
+        public Orientation direction = Orientation.Forward;
+        public Vector3D target = Vector3D.PositiveInfinity;
+
         public GyroControl(ShipSystems systems)
         {
             this.systems = systems;
-            this.gyros = gyrosetup();   
+            this.gyros = GyroSetup();   
         }
 
         /// <summary>
@@ -40,21 +43,17 @@ namespace IngameScript.DroneControl.gyro
         /// <param name="gyro_power">The power usage between 0..1 defaults to 0.9</param>
         /// <param name="min_angle">How tight to maintain aim in degrees. Lower is tighter. Default is 5.0f</param>
         /// <returns>true if aligned. Meaning the angle of error is less than minAngleRad</returns>
-        public bool OrientShip(Orientation direction,
-                        Vector3D target,
-                        IMyTerminalBlock orientation_block,
-                        double gyro_power = 0.9,
-                        float min_angle = 5.0f)
+        private bool OrientShip(Orientation direction, Vector3D target)
         {
             // get the position of the orientation block
-            Vector3D location = orientation_block.GetPosition();
+            Vector3D location = systems.orientation_block.GetPosition();
             // return argument used to indicate the min_angle_rad has been met
             bool aligned = true;
             // convert form degrees to rads
-            double min_angle_rad = (Math.PI / 180) * min_angle;
+            double min_angle_rad = (Math.PI / 180) * systems.min_angle;
 
             Matrix orientation_matrix;
-            orientation_block.Orientation.GetMatrix(out orientation_matrix);
+            systems.orientation_block.Orientation.GetMatrix(out orientation_matrix);
 
             // switch the correction setting the down matrix, this is how the orientation direction is controlled
             Vector3D down;
@@ -84,7 +83,7 @@ namespace IngameScript.DroneControl.gyro
             }
 
             // do some magic beam riding, not sure exactly what this does
-            Vector3D beam = BeamRider(location, target, orientation_block);
+            Vector3D beam = BeamRider(location, target);
             beam.Normalize();
 
             // this apples maths that I don't quite understand but it works
@@ -111,12 +110,11 @@ namespace IngameScript.DroneControl.gyro
                     continue;
                 }
 
-                float yaw_max = (float)(2 * Math.PI);
+                // this section of code determines how fast the ship will rotate
+                double ctrl_vel = ang * 2.5;
 
-                double ctrl_vel = yaw_max * (ang / Math.PI) * gyro_power;
-
-                ctrl_vel = Math.Min(yaw_max, ctrl_vel);
-                ctrl_vel = Math.Max(0.01, ctrl_vel);
+                //ctrl_vel = Math.Min(yaw_max, ctrl_vel);
+                ctrl_vel = Math.Max(0.05, ctrl_vel);
                 rot.Normalize();
                 rot *= ctrl_vel;
 
@@ -128,15 +126,27 @@ namespace IngameScript.DroneControl.gyro
 
                 aligned = false;
             }
+            // if the gyros are not aligned increment the count
+            if (aligned)
+                this.systems.gyro_not_aligned_count = 0;
+            else
+                this.systems.gyro_not_aligned_count++;
+
             return aligned;
         }
 
+
+        public void Run()
+        {
+            if (this.target != Vector3D.PositiveInfinity)
+                OrientShip(this.direction, this.target);
+        }
 
         /// <summary>
         /// Initialize the gyro controls.
         /// </summary>
         /// <returns>String representing what was initialized</returns>
-        private List<IMyGyro> gyrosetup()
+        private List<IMyGyro> GyroSetup()
         {
 
             List<IMyGyro> gyros = new List<IMyGyro>();
@@ -161,6 +171,8 @@ namespace IngameScript.DroneControl.gyro
                 gyro.GyroOverride = false;
                 gyro.Enabled = true;
             }
+            this.target = Vector3D.PositiveInfinity;
+            systems.gyro_not_aligned_count = 0;
         }
 
         /// <summary>
@@ -170,17 +182,17 @@ namespace IngameScript.DroneControl.gyro
         /// <param name="start">V start.</param>
         /// <param name="end">V end.</param>
         /// <param name="orientation_block">Orientation block.</param>
-        private Vector3D BeamRider(Vector3D start, Vector3D end, IMyTerminalBlock orientation_block)
+        private Vector3D BeamRider(Vector3D start, Vector3D end)
         {
             Vector3D bore_end = (end - start);
             Vector3D position;
-            if (orientation_block is IMyShipController)
+            if (systems.orientation_block is IMyShipController)
             {
-                position = ((IMyShipController)orientation_block).CenterOfMass;
+                position = ((IMyShipController)systems.orientation_block).CenterOfMass;
             }
             else
             {
-                position = orientation_block.GetPosition();
+                position = systems.orientation_block.GetPosition();
             }
             Vector3D aim_end = (end - position);
             Vector3D reject_end = VectorRejection(bore_end, aim_end);

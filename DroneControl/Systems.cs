@@ -30,8 +30,36 @@ namespace IngameScript.DroneControl.Systems
         public IMyShipController controller;
         public double max_speed = 400;
 
+        public IMyTerminalBlock orientation_block;
+        public double min_angle = 0.5;
+
+        /// <summary>
+        /// Constant the determines the amount of ticks till the ships acceleration will be caped to 0.01%
+        /// </summary>
+        private const int MIN_FORCE_TICKS = 600;
+        /// <summary>
+        /// Used by the thrusters to calculate the maximum force that can be applied.
+        /// The value is controlled calculated proportionally to gyro_not_aligned_count.
+        /// This percent was implemented to prevent a death spin bug where the ship would be unable to
+        /// align with a target as it kept accelerating from the target.
+        /// </summary>
+        public double max_thruster_force_percent
+        {
+            get
+            {
+                double calc = (MIN_FORCE_TICKS - gyro_not_aligned_count) / MIN_FORCE_TICKS;
+                calc = Math.Max(0.001, calc);
+                return calc;
+            }
+        }
+            
+
+        /// <summary>
+        /// The amount of ticks the gyros have not been aligned for.
+        /// </summary>
+        public double gyro_not_aligned_count = 0;
+
         // collision data used by all camera agents
-        
         public Vector3D DEFAULT_SAFE_POINT
         {
             get
@@ -51,6 +79,11 @@ namespace IngameScript.DroneControl.Systems
             this.controller = controller;
         }
 
+        /// <summary>
+        /// Utility function used to get a block orientation.
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns></returns>
         public Orientation BlockOrentaion(IMyTerminalBlock block)
         {
             Orientation block_orientation = Orientation.None;

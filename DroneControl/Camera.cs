@@ -59,7 +59,7 @@ namespace IngameScript.DroneControl.Camera
                 {
                     this.systems.collision_object = cam.Raycast(active_range);
 
-                    if (!this.systems.collision_object.IsEmpty())
+                    if (!this.systems.collision_object.IsEmpty() && this.systems.collision_object.Velocity == Vector3D.Zero)
                     {
                         Vector3D[] cornners;
                         cornners = this.systems.collision_object.BoundingBox.GetCorners();

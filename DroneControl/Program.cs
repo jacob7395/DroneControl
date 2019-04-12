@@ -43,7 +43,6 @@ namespace IngameScript
             action.Add_Point(target1);
 
             // create the task with the action
-            
             task.Add_Action(action);
 
             // pass the task to our drone
@@ -59,7 +58,10 @@ namespace IngameScript
 
             drone.run();
 
-            Echo(drone.systems.stopping_distance.ToString());
+            if (!drone.systems.collision_object.IsEmpty())
+                Echo(String.Format("{0}", drone.systems.collision_object.Velocity.ToString()));
+            Echo(String.Format("Alignment Count - {0}", drone.systems.gyro_not_aligned_count));
+            Echo(String.Format("Thruster Power - {0}", drone.systems.max_thruster_force_percent));
         }
     }
 }

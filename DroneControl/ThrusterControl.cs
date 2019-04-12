@@ -220,7 +220,7 @@ namespace IngameScript.DroneControl.thruster
             foreach (IMyThrust thruster in thrusters[direction])
                 max_force += thruster.MaxThrust;
 
-            return max_force;
+            return max_force * this.systems.max_thruster_force_percent;
         }
 
         /// <summary>

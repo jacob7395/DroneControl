@@ -1,0 +1,9 @@
+<project name="pantuml" default="main" basedir=".">
+    <!-- task definition -->
+    <taskdef name="plantuml" classname="net.sourceforge.plantuml.ant.PlantUmlTask" classpath="plantuml.jar" />
+
+    <!-- process ./src files -->
+    <target name="main">
+        <plantuml dir="." format="svg" output=".." />
+    </target>
+</project>

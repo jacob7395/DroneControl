@@ -30,8 +30,11 @@ namespace IngameScript.DroneControl.Systems
         public IMyShipController controller;
         public double max_speed = 400;
 
+
+        #region Gyros
         public IMyTerminalBlock orientation_block;
         public double min_angle = 0.5;
+        public double angle_off = 0;
 
         /// <summary>
         /// Constant the determines the amount of ticks till the ships acceleration will be caped to 0.01%
@@ -53,12 +56,13 @@ namespace IngameScript.DroneControl.Systems
             }
         }
             
-
         /// <summary>
         /// The amount of ticks the gyros have not been aligned for.
         /// </summary>
         public double gyro_not_aligned_count = 0;
+        #endregion
 
+        #region Cameras
         // collision data used by all camera agents
         public Vector3D DEFAULT_SAFE_POINT
         {
@@ -71,7 +75,7 @@ namespace IngameScript.DroneControl.Systems
         public MyDetectedEntityInfo collision_object = new MyDetectedEntityInfo();
         public Vector3D safe_point = Vector3D.PositiveInfinity;
         public List<Vector3D> collision_corrners = new List<Vector3D>();
-
+        #endregion
 
         public ShipSystems(IMyGridTerminalSystem gridTerminalSystem, IMyShipController controller)
         {

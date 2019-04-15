@@ -53,15 +53,12 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo("Alive Count " + alive_count.ToString());
             alive_count += (0.0166666); // there are 60 ticks per simulation second
 
             drone.run();
 
-            if (!drone.systems.collision_object.IsEmpty())
-                Echo(String.Format("{0}", drone.systems.collision_object.Velocity.ToString()));
             Echo(String.Format("Alignment Count - {0}", drone.systems.gyro_not_aligned_count));
-            Echo(String.Format("Thruster Power - {0}", drone.systems.max_thruster_force_percent));
+            Echo(String.Format("Angle Off - {0}", drone.systems.angle_off));
         }
     }
 }

@@ -90,7 +90,7 @@ namespace IngameScript.DroneControl.gyro
             // credit goes to link given above
             foreach (IMyGyro gyro in this.gyros)
             {
-                gyro.Orientation.GetMatrix(out orientation_matrix);
+                systems.orientation_block.Orientation.GetMatrix(out orientation_matrix);
                 var localCurrent = Vector3D.Transform(down, MatrixD.Transpose(orientation_matrix));
                 var localTarget = Vector3D.Transform(beam, MatrixD.Transpose(gyro.WorldMatrix.GetOrientation()));
 
@@ -103,6 +103,9 @@ namespace IngameScript.DroneControl.gyro
                 else
                     ang = Math.Atan2(ang, Math.Sqrt(Math.Max(0.0, 1.0 - ang * ang)));
 
+                // record the angle offset
+                systems.angle_off = ang * 180/Math.PI;
+
                 // check if the gyro is pointing at the target
                 if (ang < min_angle_rad)
                 {
@@ -111,10 +114,10 @@ namespace IngameScript.DroneControl.gyro
                 }
 
                 // this section of code determines how fast the ship will rotate
-                double ctrl_vel = ang * 2.5;
+                // TODO try a PDI controller
+                double ctrl_vel = ang * 3;
 
-                //ctrl_vel = Math.Min(yaw_max, ctrl_vel);
-                ctrl_vel = Math.Max(0.05, ctrl_vel);
+                ctrl_vel = Math.Max(0.075, ctrl_vel);
                 rot.Normalize();
                 rot *= ctrl_vel;
 
@@ -125,6 +128,7 @@ namespace IngameScript.DroneControl.gyro
                 gyro.GyroOverride = true;
 
                 aligned = false;
+
             }
             // if the gyros are not aligned increment the count
             if (aligned)

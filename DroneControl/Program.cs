@@ -43,7 +43,6 @@ namespace IngameScript
             action.Add_Point(target1);
 
             // create the task with the action
-            
             task.Add_Action(action);
 
             // pass the task to our drone
@@ -54,12 +53,12 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo("Alive Count " + alive_count.ToString());
             alive_count += (0.0166666); // there are 60 ticks per simulation second
 
             drone.run();
 
-            Echo(drone.systems.stopping_distance.ToString());
+            Echo(String.Format("Alignment Count - {0}", drone.systems.gyro_not_aligned_count));
+            Echo(String.Format("Angle Off - {0}", drone.systems.angle_off));
         }
     }
 }

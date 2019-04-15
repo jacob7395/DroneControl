@@ -113,7 +113,6 @@ namespace IngameScript.DroneControl.utility.task
     /// </summary>
     public class GoTo : DroneAction
     {
-        Vector3D target;
 
         // this allows the drone to be off from the target by a set amount.
         // this is not currently serealizable
@@ -124,13 +123,6 @@ namespace IngameScript.DroneControl.utility.task
         public GoTo(Vector3D target, float tolorance = 5)
         {
             this.tolorance = tolorance;
-            this.route = new List<Vector3D>();
-            this.route.Add(target);
-        }
-
-        public GoTo(string objective)
-        {
-            this.Deserialization(objective);
             this.route = new List<Vector3D>();
             this.route.Add(target);
         }

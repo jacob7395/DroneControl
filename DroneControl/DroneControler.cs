@@ -35,8 +35,6 @@ namespace IngameScript.DroneControl
 
         public Task current_task = null;
 
-        private IMyTerminalBlock orientation_block;
-
         /// <summary>
         /// Initialize the control groups and wait for a task to be given.
         /// </summary>
@@ -60,9 +58,9 @@ namespace IngameScript.DroneControl
             List<IMyShipConnector> ship_connectors = new List<IMyShipConnector>();
             GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(ship_connectors);
             if (ship_connectors.Count > 0)
-                this.orientation_block = ship_connectors[0];
+                systems.orientation_block = ship_connectors[0];
             else
-                this.orientation_block = systems.controller;
+                systems.orientation_block = systems.controller;
 
             this.gyros = new GyroControl(this.systems);
             this.thrusters = new ThrusterControl(this.systems);
@@ -147,13 +145,13 @@ namespace IngameScript.DroneControl
         public Vector3D get_local_space(Vector3D wolrd_pos)
         {
             //block.WorldMatrix.Translation is the same as block.GetPosition()
-            Vector3D referenceWorldPosition = this.orientation_block.WorldMatrix.Translation;
+            Vector3D referenceWorldPosition = systems.orientation_block.WorldMatrix.Translation;
 
             //Convert worldPosition into a world direction
             Vector3D worldDirection = wolrd_pos - referenceWorldPosition;
 
             //Convert worldDirection into a local direction
-            Vector3D bodyPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(this.orientation_block.WorldMatrix));
+            Vector3D bodyPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(systems.orientation_block.WorldMatrix));
 
             return bodyPosition;
         }
@@ -186,7 +184,7 @@ namespace IngameScript.DroneControl
 
             // aim the ship towards the objective
             if (target_diff.Length() > 10)
-                this.gyros.OrientShip(Orientation.Forward, Target, this.orientation_block, gyro_power: 1, min_angle: 0.01f);
+                this.gyros.target = Target;
             else
                 this.gyros.DisableAuto();
 
@@ -201,7 +199,8 @@ namespace IngameScript.DroneControl
         public void run()
         {
             this.thrusters.run();
-            
+            this.gyros.Run();
+
             if (this.current_task != null)
             {       
                 DroneAction current_action;

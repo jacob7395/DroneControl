@@ -13,10 +13,10 @@ using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
-using IngameScript.DroneControl.utility;
-using IngameScript.DroneControl.Systems;
+using IngameScript.Drone.utility;
+using IngameScript.Drone.Systems;
 
-namespace IngameScript.DroneControl.gyro
+namespace IngameScript.Drone.gyro
 {
     // Originally from: http://forums.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461
     // This code has been re-factored from the source, the maths remains the same
@@ -128,7 +128,6 @@ namespace IngameScript.DroneControl.gyro
                 gyro.GyroOverride = true;
 
                 aligned = false;
-
             }
             // if the gyros are not aligned increment the count
             if (aligned)
@@ -152,7 +151,6 @@ namespace IngameScript.DroneControl.gyro
         /// <returns>String representing what was initialized</returns>
         private List<IMyGyro> GyroSetup()
         {
-
             List<IMyGyro> gyros = new List<IMyGyro>();
 
             systems.GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);

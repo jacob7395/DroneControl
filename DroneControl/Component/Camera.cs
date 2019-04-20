@@ -14,9 +14,9 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
-using IngameScript.DroneControl.Systems;
+using IngameScript.Drone.Systems;
 
-namespace IngameScript.DroneControl.Camera
+namespace IngameScript.Drone.Camera
 {
     /// <summary>
     /// Enum used to indicate operational mode

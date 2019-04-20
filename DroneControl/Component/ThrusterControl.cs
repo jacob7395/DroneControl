@@ -1,12 +1,12 @@
-﻿using IngameScript.DroneControl.utility;
+﻿using IngameScript.Drone.utility;
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using VRageMath;
-using IngameScript.DroneControl.Systems;
+using IngameScript.Drone.Systems;
 
-namespace IngameScript.DroneControl.thruster
+namespace IngameScript.Drone.thruster
 {
     public enum Thruster_State
     {

@@ -19,7 +19,7 @@ using System.Text.RegularExpressions;
 /// <summary>
 /// Namespace to hold generic operators and enums.
 /// </summary>
-namespace IngameScript.DroneControl.utility
+namespace IngameScript.Drone.utility
 {
     /// <summary>
     /// Enum used to represent orientation in six directions

@@ -15,10 +15,10 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
-using IngameScript.DroneControl.utility.task;
-using IngameScript.DroneControl.utility;
+using IngameScript.Drone.utility.task;
+using IngameScript.Drone.utility;
 
-namespace IngameScript.DroneControl.Systems
+namespace IngameScript.Drone.Systems
 {
 
     public class ShipSystems

@@ -14,21 +14,20 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
-using IngameScript.DroneControl.gyro;
-using IngameScript.DroneControl.utility;
-using IngameScript.DroneControl.utility.task;
-using IngameScript.DroneControl.thruster;
-using IngameScript.DroneControl.Camera;
-using IngameScript.DroneControl.Systems;
+using IngameScript.Drone.gyro;
+using IngameScript.Drone.utility;
+using IngameScript.Drone.utility.task;
+using IngameScript.Drone.thruster;
+using IngameScript.Drone.Camera;
+using IngameScript.Drone.Systems;
 
-namespace IngameScript.DroneControl
+namespace IngameScript.Drone.Controller
 {
     /// <summary>
     /// Class that implements control over a ship.
     /// </summary>
-    public class DroneControler : IAutoControl
+    public class DroneControler : DroneBase, IAutoControl
     {
-        public ShipSystems systems;
         private IDictionary<Orientation, List<CameraAgent>> cameras;
         private GyroControl gyros;
         private ThrusterControl thrusters;
@@ -41,26 +40,7 @@ namespace IngameScript.DroneControl
         /// <param name="GridTerminalSystem"></param>
         public DroneControler(IMyGridTerminalSystem GridTerminalSystem)
         {
-            // get the main remote controller being used
-            IMyRemoteControl controller = GridTerminalSystem.GetBlockWithName("Controler") as IMyRemoteControl;
-            List<IMyRemoteControl> remote_controlers = new List<IMyRemoteControl>();
-            GridTerminalSystem.GetBlocksOfType<IMyRemoteControl>(remote_controlers);
-            foreach (IMyRemoteControl control in remote_controlers)
-            {
-                controller = control;
-                break;
-            }
-
-            // setup the ship systems
-            this.systems = new ShipSystems(GridTerminalSystem, controller);
-
-            // setup the orientation block to a ship connector or a controller if one was not found
-            List<IMyShipConnector> ship_connectors = new List<IMyShipConnector>();
-            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(ship_connectors);
-            if (ship_connectors.Count > 0)
-                systems.orientation_block = ship_connectors[0];
-            else
-                systems.orientation_block = systems.controller;
+            this.defaultInit(GridTerminalSystem);
 
             this.gyros = new GyroControl(this.systems);
             this.thrusters = new ThrusterControl(this.systems);
@@ -196,7 +176,7 @@ namespace IngameScript.DroneControl
         /// 
         /// Will idle if no task is available.
         /// </summary>
-        public void run()
+        public override void run()
         {
             this.thrusters.run();
             this.gyros.Run();

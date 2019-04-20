@@ -70,100 +70,130 @@ package DroneControl {
         }
     }
 
-    package Camera {
-        enum Camera_Mode {
-            Collision_Avoidance
+    package component {
+        package Camera {
+            enum Camera_Mode {
+                Collision_Avoidance
+            }
+
+            class Camera {
+                -IMyCameraBlock cam
+                +<<get>> MyDetectedEntityInfo collision_object
+                +<<get>> Camera_Mode mode
+                +double active_range
+                __
+                +void Camera(\nIMyCameraBlock cam,\ndouble active_range = 2000)
+                +bool SetMode(Camera_Mode mode)
+                +Vector3D GetSafePoint()
+                __
+                +bool Run()
+            }
         }
 
-        class Camera {
-            -IMyCameraBlock cam
-            +<<get>> MyDetectedEntityInfo collision_object
-            +<<get>> Camera_Mode mode
-            +double active_range
-            __
-            +void Camera(\nIMyCameraBlock cam,\ndouble active_range = 2000)
-            +bool SetMode(Camera_Mode mode)
-            +Vector3D GetSafePoint()
-            __
-            +bool Run()
+        package Gyro {
+            class GyroControl <AutoControl>{
+                -List<IMyGyro> gyros
+                -IMyGridTerminalSystem GridTerminalSystem
+                __
+                +GyroControl(IMyGridTerminalSystem GridTerminalSystem)
+                +bool OrientShip(\n\
+                Orientation direction,\n\
+                Vector3D target,\n\
+                IMyTerminalBlock orientation_block,\n\
+                double gyro_power = 0.9,\n\
+                float min_angle = 5.0f)
+                __
+                -List<IMyGyro> gyrosetup()
+            }
+        }
+
+        package Thruster {
+            enum velocity_state
+            {
+                Moving
+                Holding
+            }
+
+            class ThrusterControl <AutoControl>{
+                
+                +Vector3D velocity
+                +Vector3D stopping_distances
+                #velocity_state State
+                -List<IMyThrust> ship_thrusters
+
+                -void SetVelocity(\n\
+                double target,\n\
+                Orientation direction)
+                -AppleAcceleration(\n\
+                double acceleration,\n\
+                Orientation direction)
+                -ApplyForce(\n\
+                double force,\n\
+                Orientation direction)
+                -GetMaxDirectionalForce(Orientation direction)
+                -EnableAllThrusers()
+                -OverideThrusters(\n\
+                float percent,\n\
+                Orientation direction)
+                -DisableAuto()
+            }
+        }
+        
+        package Comms {
+            class Comms {
+
+            }
         }
     }
+    
 
-    package Gyro {
-        class GyroControl <AutoControl>{
-            -List<IMyGyro> gyros
+    package Controller {
+        class DroneControl <AutoControl>{
+            -IDictionary<Orientation, List<IMyCameraBlock>> = cameras
+            -GyroControl gyros
+            -ThrusterControl thrusters
+
+            -Task current_task
             -IMyGridTerminalSystem GridTerminalSystem
+            -IMyRemoteControl controller
+            -private IMyTerminalBlock orientation_block
+
+            -double const max_speed = 400
             __
-            +GyroControl(IMyGridTerminalSystem GridTerminalSystem)
-            +bool OrientShip(\n\
-            Orientation direction,\n\
-            Vector3D target,\n\
-            IMyTerminalBlock orientation_block,\n\
-            double gyro_power = 0.9,\n\
-            float min_angle = 5.0f)
+            +DroneControler(IMyGridTerminalSystem GridTerminalSystem)
+            +SetTask(Task task)
+            +Vector3D CurrentLocation()
+            +Vector3D GetLocalVelocity()
+            +Vector3D CalcLocalSpace(Vector3D wolrd_pos)
             __
-            -List<IMyGyro> gyrosetup()
+            -bool GoTo(Vector3D Target)
+            __
+            +run()
+        }
+    }
+    
+    package Cordinator {
+        class DroneCordinator {
+
         }
     }
 
-    package Thruster {
-        enum velocity_state
-        {
-            Moving
-            Holding
-        }
 
-        class ThrusterControl <AutoControl>{
-            
-            +Vector3D velocity
-            +Vector3D stopping_distances
-            #velocity_state State
-            -List<IMyThrust> ship_thrusters
 
-            -void SetVelocity(\n\
-            double target,\n\
-            Orientation direction)
-            -AppleAcceleration(\n\
-            double acceleration,\n\
-            Orientation direction)
-            -ApplyForce(\n\
-            double force,\n\
-            Orientation direction)
-            -GetMaxDirectionalForce(Orientation direction)
-            -EnableAllThrusers()
-            -OverideThrusters(\n\
-            float percent,\n\
-            Orientation direction)
-            -DisableAuto()
-        }
+    abstract Drone {
+        void run()
     }
 
-    class DroneControl <AutoControl>{
-        -IDictionary<Orientation, List<IMyCameraBlock>> = cameras
-        -GyroControl gyros
-        -ThrusterControl thrusters
+    Drone .. DroneControl
+    Drone .. DroneCordinator
 
-        -Task current_task
-        -IMyGridTerminalSystem GridTerminalSystem
-        -IMyRemoteControl controller
-        -private IMyTerminalBlock orientation_block
-
-        -double const max_speed = 400
-        __
-        +DroneControler(IMyGridTerminalSystem GridTerminalSystem)
-        +SetTask(Task task)
-        +Vector3D CurrentLocation()
-        +Vector3D GetLocalVelocity()
-        +Vector3D CalcLocalSpace(Vector3D wolrd_pos)
-        __
-        -bool GoTo(Vector3D Target)
-        __
-        +run()
-    }
+    DroneCordinator <-- Comms
+    DroneControl <-- Comms
 
     DroneControl <-- ThrusterControl
     DroneControl <-- GyroControl
     DroneControl <-- Task : Recives
     DroneControl "1" -- "*" Camera
+    DroneControl <-- ShipSystems
 }
 @enduml

@@ -15,7 +15,7 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRageMath;
 
-namespace IngameScript.DroneControl.utility.task
+namespace IngameScript.Drone.utility.task
 {
     /// <summary>
     /// A task object hold several actions and provides an interface to access the actions.

@@ -96,13 +96,16 @@
     <Analyzer Include="c:\users\jacob\appdata\local\microsoft\visualstudio\15.0_7552bea9\extensions\uv3kdlwi.jon\Analyzers\MDKAnalyzer.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Camera.cs" />
+    <Compile Include="Component\Camera.cs" />
+    <Compile Include="Drone.cs" />
+    <Compile Include="DroneCoordinator.cs" />
+    <Compile Include="Component\Coms.cs" />
     <Compile Include="Systems.cs" />
     <Compile Include="Task.cs" />
     <Compile Include="DroneControler.cs" />
-    <Compile Include="ThrusterControl.cs" />
+    <Compile Include="Component\ThrusterControl.cs" />
     <Compile Include="Utility.cs" />
-    <Compile Include="GyroControl.cs" />
+    <Compile Include="Component\GyroControl.cs" />
     <Compile Include="MDK\Bootstrapper.cs" />
     <AdditionalFiles Include="MDK\MDK.options">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
